@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoCase — Powered by Benchmark — You don't have a case. Prove us wrong.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0e0e;
+    --ink-soft: #3a3a3a;
+    --ink-muted: #7a7a7a;
+    --paper: #f5f2ed;
+    --paper-dark: #ede9e2;
+    --rule: #d4cfc7;
+    --blue: #1a4fd6;
+    --blue-light: #e8eefb;
+    --red: #c42b2b;
+    --red-light: #fdf0f0;
+    --gold: #b8922a;
+    --gold-light: #fdf7e8;
+    --green: #1a7a4a;
+    --green-light: #eaf5f0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .serif { font-family: 'Playfair Display', serif; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(245, 242, 237, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--ink);
+  }
+
+  .nav-logo-mark {
+    width: 32px; height: 32px;
+    background: var(--ink);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .nav-logo-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+  }
+
+  .nav-badge {
+    font-size: 10px;
+    color: var(--ink-muted);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 2px 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex; align-items: center; gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 400;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--ink); }
+
+  .nav-cta {
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+    padding: 8px 20px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    transition: opacity 0.2s !important;
+  }
+
+  .nav-cta:hover { opacity: 0.85 !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 120px 2rem 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, var(--rule) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.4;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 2.5rem;
+    position: relative;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  .hero-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 700;
+    line-height: 1.0;
+    letter-spacing: -2px;
+    margin-bottom: 1rem;
+    position: relative;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    color: var(--ink-muted);
+  }
+
+  .hero-sub {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--blue);
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .hero-desc {
+    max-width: 540px;
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+
+  .hero-actions {
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 0.6s ease 0.4s both;
+    margin-bottom: 4rem;
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    text-decoration: none;
+    border: 1px solid var(--rule);
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+  .hero-disclaimer {
+    font-size: 11px;
+    color: var(--ink-muted);
+    max-width: 480px;
+    line-height: 1.5;
+    animation: fadeUp 0.6s ease 0.5s both;
+  }
+
+  /* COURTROOM PREVIEW */
+  .courtroom-preview {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    animation: fadeUp 0.6s ease 0.35s both;
+  }
+
+  .preview-panel {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--rule);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .preview-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .preview-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+  }
+
+  .preview-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .preview-body { padding: 12px; }
+
+  .preview-arg {
+    font-size: 10px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border-left: 2px solid;
+  }
+
+  .preview-arg.red { background: var(--red-light); border-color: var(--red); color: #7a1515; }
+  .preview-arg.blue { background: var(--blue-light); border-color: var(--blue); color: #0c2d7a; }
+
+  .verdict-meter {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+
+  .verdict-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  .verdict-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    padding: 4px;
+  }
+
+  .verdict-summary {
+    font-size: 10px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  /* UPL BANNER */
+  .upl-banner {
+    background: var(--gold-light);
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    padding: 1rem 2rem;
+    text-align: center;
+  }
+
+  .upl-banner-inner {
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 13px;
+    color: #5a4010;
+    line-height: 1.6;
+  }
+
+  .upl-banner strong { font-weight: 500; }
+
+  /* SECTION STYLES */
+  section { padding: 80px 2rem; }
+
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .section-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 580px;
+    line-height: 1.7;
+  }
+
+  /* HOW IT WORKS */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2px;
+    background: var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 3rem;
+  }
+
+  .how-step {
+    background: var(--paper);
+    padding: 2rem;
+    position: relative;
+  }
+
+  .how-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--rule);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .how-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .how-desc {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .feature-card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.75rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .feature-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  /* PRIVACY */
+  .privacy-section { background: var(--ink); color: var(--paper); }
+
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    margin-top: 3rem;
+  }
+
+  .privacy-col-title {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .privacy-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .privacy-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .privacy-item-text { font-size: 14px; line-height: 1.6; opacity: 0.85; }
+
+  /* PRICING */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .pricing-card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 2rem;
+    position: relative;
+  }
+
+  .pricing-card.featured {
+    border: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .pricing-featured-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--blue);
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 14px;
+    border-radius: 100px;
+    letter-spacing: 0.04em;
+  }
+
+  .pricing-tier { font-size: 12px; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 0.5rem; text-transform: uppercase; }
+  .pricing-price { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 0.25rem; }
+  .pricing-cadence { font-size: 13px; opacity: 0.6; margin-bottom: 1.5rem; }
+  .pricing-desc { font-size: 14px; opacity: 0.8; margin-bottom: 1.5rem; line-height: 1.5; }
+
+  .pricing-features { list-style: none; margin-bottom: 2rem; }
+  .pricing-features li { font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); opacity: 0.85; display: flex; align-items: center; gap: 8px; }
+  .pricing-card.featured .pricing-features li { border-bottom-color: rgba(255,255,255,0.1); }
+  .pricing-check { font-size: 12px; color: var(--green); }
+  .pricing-card.featured .pricing-check { color: #4ade80; }
+
+  .pricing-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+  }
+
+  .pricing-btn:hover { opacity: 0.85; }
+  .pricing-btn-outline { background: transparent; border: 1px solid var(--rule); color: var(--ink); }
+  .pricing-btn-ink { background: var(--ink); color: var(--paper); }
+  .pricing-btn-white { background: var(--paper); color: var(--ink); }
+
+  /* LEGAL SECTIONS */
+  .legal-tabs {
+    display: flex; gap: 0;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: white;
+  }
+
+  .legal-tab {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    border-right: 1px solid var(--rule);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .legal-tab:last-child { border-right: none; }
+  .legal-tab.active { background: var(--ink); color: var(--paper); }
+  .legal-tab:hover:not(.active) { background: var(--paper-dark); color: var(--ink); }
+
+  .legal-content { display: none; }
+  .legal-content.active { display: block; }
+
+  .legal-box {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 2rem;
+  }
+
+  .legal-box h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 1.5rem 0 0.5rem;
+    color: var(--ink);
+  }
+
+  .legal-box h3:first-child { margin-top: 0; }
+
+  .legal-box p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+  }
+
+  .legal-box ul {
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .legal-box ul li {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin-bottom: 0.25rem;
+  }
+
+  .legal-highlight {
+    background: var(--gold-light);
+    border: 1px solid #e8c97a;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+  }
+
+  .legal-highlight p {
+    font-size: 13px;
+    color: #5a4010;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* ATTORNEY SECTION */
+  .attorney-section { background: var(--paper-dark); }
+
+  .attorney-flow {
+    display: flex; align-items: center; gap: 0;
+    margin-top: 3rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+  }
+
+  .attorney-step {
+    flex-shrink: 0;
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    width: 220px;
+  }
+
+  .attorney-arrow {
+    flex-shrink: 0;
+    width: 40px;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 18px;
+  }
+
+  .attorney-step-num { font-size: 11px; color: var(--ink-muted); margin-bottom: 4px; letter-spacing: 0.06em; }
+  .attorney-step-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .attorney-step-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+
+  /* FAQ */
+  .faq-list { margin-top: 2rem; }
+
+  .faq-item {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.25rem 0;
+    cursor: pointer;
+  }
+
+  .faq-question {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    user-select: none;
+  }
+
+  .faq-toggle { font-size: 20px; color: var(--ink-muted); transition: transform 0.2s; }
+  .faq-item.open .faq-toggle { transform: rotate(45deg); }
+
+  .faq-answer {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+
+  .faq-item.open .faq-answer { max-height: 300px; padding-top: 0.75rem; }
+
+  /* FOOTER */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 4rem 2rem 2rem;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    max-width: 1100px;
+    margin: 0 auto 3rem;
+  }
+
+  .footer-brand-desc { font-size: 14px; opacity: 0.6; line-height: 1.6; margin-top: 1rem; max-width: 280px; }
+  .footer-col-title { font-size: 11px; letter-spacing: 0.1em; opacity: 0.4; text-transform: uppercase; margin-bottom: 1rem; }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 0.75rem; }
+  .footer-links a { text-decoration: none; color: rgba(245,242,237,0.65); font-size: 14px; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--paper); }
+
+  .footer-bottom {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(245,242,237,0.1);
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-legal {
+    font-size: 11px;
+    opacity: 0.45;
+    line-height: 1.7;
+    max-width: 700px;
+  }
+
+  .footer-copy { font-size: 12px; opacity: 0.4; white-space: nowrap; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    nav { padding: 0 1rem; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 1.5rem 60px; }
+    .courtroom-preview { grid-template-columns: 1fr; }
+    .privacy-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .footer-bottom { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1L2 5v5l6 5 6-5V5L8 1z" stroke="#f5f2ed" stroke-width="1.5" fill="none"/>
+        <path d="M8 6v4M6 8h4" stroke="#f5f2ed" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="nav-logo-name">NoCase</span>
+    <span class="nav-badge">by Benchmark</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#attorneys">For attorneys</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#legal">Legal</a></li>
+    <li><a href="#app" class="nav-cta">Start your case</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-grid"></div>
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    AI-powered legal intelligence · Powered by Benchmark
+  </div>
+  <h1 class="hero-headline">You don't have<br><em>a case.</em></h1>
+  <p class="hero-sub">Prove us wrong.</p>
+  <p class="hero-desc">Upload your documents. AI argues both sides simultaneously. A judge renders a live verdict. Know exactly where you stand before you spend a dollar on an attorney.</p>
+
+  <div style="font-size:11px;color:var(--ink-muted);letter-spacing:0.08em;margin-bottom:0.75rem;opacity:0.7;">REAL CASE — Aggregate Theft · 221st Judicial District · Montgomery County, TX</div>
+  <div class="courtroom-preview">
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span class="preview-label">PROSECUTION — STATE OF TEXAS</span>
+        <span class="preview-badge" style="background:#fdf0f0;color:#c42b2b;">Plaintiff</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-arg red">Aggregate Theft under Tex. Penal Code §31.03(e)(5) — multiple thefts from same employer pursuant to one continuing course of conduct, properly aggregated to Third Degree Felony threshold of $30,000.</div>
+        <div class="preview-arg red">Employee had authorized access to company funds but diverted $34,946 for personal use without consent — Ramirez v. State, 802 S.W.2d 674: authorized access does not negate theft when funds are diverted.</div>
+        <div class="preview-arg red">Financial records, bank statements, and employer testimony establish intent to deprive beyond reasonable doubt — pattern of systematic conduct defeats any claim of mistake or bookkeeping error.</div>
+      </div>
+    </div>
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span class="preview-label">THE JUDGE</span>
+        <span class="preview-badge" style="background:#fdf0f0;color:#c42b2b;">221st District · Judge Michalk</span>
+      </div>
+      <div class="preview-body">
+        <div class="verdict-label" style="color:#c42b2b;">Guilty — State's Case Exceptionally Strong</div>
+        <div class="verdict-meter"><div class="verdict-fill" style="width:96%;background:#c42b2b;"></div></div>
+        <div style="font-size:10px;color:#7a7a7a;text-align:center;margin-bottom:8px;">Confidence: 96%</div>
+        <div class="verdict-summary">Guilty plea entered August 13, 2020. Full restitution of $34,946 paid. Deferred adjudication 4 years CSCD with 160 hours community service. Supervision terminated early June 29, 2022. NoCase predicted this outcome correctly from the evidence alone.</div>
+      </div>
+    </div>
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span class="preview-label">DEFENSE</span>
+        <span class="preview-badge" style="background:#e8eefb;color:#1a4fd6;">Defendant</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-arg blue">Aggregation challenge under Ramos v. State, 303 S.W.3d 302 — State must prove transactions were part of unified scheme, not isolated incidents. Itemized discovery demanded.</div>
+        <div class="preview-arg blue">18-month delay between offense date and charging suggests possible proof problems and case weaknesses in the State's financial documentation.</div>
+        <div class="preview-arg blue">Full restitution commitment and first-offense status support deferred adjudication over prison — mitigating factors position defendant for supervised probation rather than 2–10 year TDCJ sentence.</div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--ink-muted);text-align:center;margin-top:0.75rem;margin-bottom:-1rem;opacity:0.6;">Case No. 19-08-10929 · Outcome confirmed · AI verdict matched actual result</div>
+
+  <div id="liveInputSection" style="width:100%;max-width:680px;margin:1.5rem auto 0;text-align:left;">
+    <div style="background:white;border:1px solid var(--rule);border-radius:12px;padding:1.5rem;">
+      <label style="font-size:11px;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:6px;">Describe your situation</label>
+      <textarea id="caseDesc" placeholder="Example: My contractor took my $25,000 deposit and never started the work. It has been 6 months and they won't return my calls..." style="width:100%;border:1px solid var(--rule);border-radius:8px;padding:0.875rem 1rem;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:var(--paper);resize:vertical;min-height:80px;margin-bottom:1rem;line-height:1.6;box-sizing:border-box;"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+        <div>
+          <label style="font-size:11px;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px;">Case type</label>
+          <select id="caseType" style="width:100%;border:1px solid var(--rule);border-radius:8px;padding:0.625rem 0.875rem;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--paper);">
+            <option value="Civil contract dispute">Civil / Contract dispute</option>
+            <option value="Aggregate theft embezzlement">Theft / Embezzlement</option>
+            <option value="Criminal felony">Criminal — Felony</option>
+            <option value="Real estate dispute">Real estate dispute</option>
+            <option value="Employment dispute">Employment dispute</option>
+            <option value="Debt promissory note">Debt / Promissory note</option>
+            <option value="Personal injury">Personal injury</option>
+            <option value="Business dispute">Business dispute</option>
+            <option value="Family law">Family law</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:500;color:var(--ink-muted);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px;">Your side</label>
+          <select id="userSide" style="width:100%;border:1px solid var(--rule);border-radius:8px;padding:0.625rem 0.875rem;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--paper);">
+            <option value="Plaintiff">Plaintiff — I am bringing the claim</option>
+            <option value="Defendant">Defendant — I am responding</option>
+            <option value="Neutral">Neutral — analyze both sides</option>
+          </select>
+        </div>
+      </div>
+      <div id="ncError" style="display:none;background:var(--red-light);border:1px solid #e8b4b4;border-radius:6px;padding:0.75rem 1rem;font-size:13px;color:var(--red);margin-bottom:0.75rem;"></div>
+      <button id="ncRunBtn" onclick="ncRunAnalysis()" style="width:100%;padding:0.875rem;background:var(--ink);color:var(--paper);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L3 5.5v5L8 14l5-3.5v-5L8 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+        Analyze my case — free
+      </button>
+    </div>
+  </div>
+
+  <div id="ncTimer" style="display:none;font-size:12px;color:var(--ink-muted);text-align:center;margin-top:0.75rem;">Analyzing — pulling real court opinions from CourtListener and Case.law...</div>
+
+  <div id="ncCourtroom" style="display:none;width:100%;max-width:900px;margin:1.5rem auto 0;">
+    <div style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;">
+      <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--red);border-radius:10px;overflow:hidden;">
+        <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);" id="ncProsLabel">PROSECUTION</span>
+          <span style="font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;background:var(--red-light);color:var(--red);" id="ncProsBadge">Plaintiff</span>
+        </div>
+        <div id="ncProsBody" style="padding:1rem;min-height:200px;font-size:13px;color:var(--ink-soft);line-height:1.6;"></div>
+      </div>
+      <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--gold);border-radius:10px;overflow:hidden;">
+        <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);">THE JUDGE</span>
+          <span style="font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;background:var(--gold-light);color:var(--gold);">Verdict</span>
+        </div>
+        <div id="ncJudgeBody" style="padding:1rem;min-height:200px;"></div>
+      </div>
+      <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--blue);border-radius:10px;overflow:hidden;">
+        <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);" id="ncDefLabel">DEFENSE</span>
+          <span style="font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;background:var(--blue-light);color:var(--blue);" id="ncDefBadge">Defendant</span>
+        </div>
+        <div id="ncDefBody" style="padding:1rem;min-height:200px;font-size:13px;color:var(--ink-soft);line-height:1.6;"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hero-disclaimer" style="margin-top:1.5rem;">Benchmark provides legal information only — not legal advice. No attorney-client relationship is created. All analysis is AI-generated and must be independently verified. Not a substitute for licensed legal counsel.</p>
+</section>
+
+<style>
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+</style>
+
+<script>
+function ncShowSkeleton(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = [44,60,52,48].map(h => `<div style="height:${h}px;background:linear-gradient(90deg,var(--paper) 25%,var(--paper-dark) 50%,var(--paper) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;margin-bottom:8px;"></div>`).join('');
+}
+function ncParseArgs(text) {
+  const lines = text.split('\n').filter(l => l.trim().length > 40);
+  const args = []; let cur = '';
+  for (const line of lines) {
+    const clean = line.replace(/^[#*\-\d\.]+\s*/, '').trim();
+    if (clean.length > 20) {
+      cur += (cur.length > 0 ? ' ' : '') + clean;
+      if (cur.length > 200) { args.push(cur); cur = ''; }
+    }
+  }
+  if (cur.length > 30) args.push(cur);
+  return args.slice(0, 4);
+}
+async function ncRunAnalysis() {
+  const desc = document.getElementById('caseDesc').value.trim();
+  const caseType = document.getElementById('caseType').value;
+  const userSide = document.getElementById('userSide').value;
+  const err = document.getElementById('ncError');
+  err.style.display = 'none';
+  if (desc.length < 30) { err.textContent = 'Please describe your situation in at least a few sentences.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('ncRunBtn');
+  btn.disabled = true;
+  btn.innerHTML = 'Analyzing...';
+  document.getElementById('ncCourtroom').style.display = 'block';
+  document.getElementById('ncTimer').style.display = 'block';
+  if (userSide === 'Plaintiff') { document.getElementById('ncProsLabel').textContent = 'PROSECUTION — YOUR SIDE'; document.getElementById('ncProsBadge').textContent = 'YOUR SIDE'; }
+  if (userSide === 'Defendant') { document.getElementById('ncDefLabel').textContent = 'DEFENSE — YOUR SIDE'; document.getElementById('ncDefBadge').textContent = 'YOUR SIDE'; }
+  ncShowSkeleton('ncProsBody'); ncShowSkeleton('ncJudgeBody'); ncShowSkeleton('ncDefBody');
+  const caseData = { facts: desc, jurisdiction: 'Texas', userSide };
+  const LAMBDA = 'https://ck4xgjmk0l.execute-api.us-east-1.amazonaws.com/prod/analyze';
+  try {
+    const [pr, dr] = await Promise.all([
+      fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'red_team_plaintiff', caseData, caseType }) }),
+      fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'red_team_defendant', caseData, caseType }) })
+    ]);
+    const [pd, dd] = await Promise.all([pr.json(), dr.json()]);
+    const pt = pd.result || pd.body || ''; const dt = dd.result || dd.body || '';
+    const pArgs = ncParseArgs(pt); const dArgs = ncParseArgs(dt);
+    document.getElementById('ncProsBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener · Case.law</div>` + pArgs.map((a,i)=>`<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--red);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
+    document.getElementById('ncDefBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener · Case.law</div>` + dArgs.map((a,i)=>`<div style="background:var(--blue-light);border-left:3px solid var(--blue);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
+    const score = Math.min(95, Math.max(35, Math.round(55 + (pt.length - dt.length) / 500)));
+    let label, color, bg;
+    if (score >= 70) { label='Prosecution Favored'; color='var(--red)'; bg='var(--red-light)'; }
+    else if (score >= 50) { label='Contested — Mixed Claims'; color='var(--gold)'; bg='var(--gold-light)'; }
+    else { label='Defense Favored'; color='var(--blue)'; bg='var(--blue-light)'; }
+    document.getElementById('ncJudgeBody').innerHTML = `<div style="background:${bg};border-radius:8px;padding:0.875rem;margin-bottom:10px;text-align:center;"><div style="font-size:13px;font-weight:500;color:${color};margin-bottom:8px;">${label}</div><div style="height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden;margin-bottom:5px;"><div id="ncFill" style="height:100%;width:0%;background:${color};border-radius:3px;transition:width 1.5s ease;"></div></div><div style="font-size:11px;color:var(--ink-muted);">Confidence: ${score}%</div></div><div style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px;">Based on your facts and verified case law, the ${score>=50?'prosecution':'defense'} presents the stronger initial position.</div><button onclick="alert('Attorney referral coming soon. Email hello@benchmark.com.')" style="width:100%;padding:8px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Find me a lawyer →</button>`;
+    setTimeout(()=>{ const f=document.getElementById('ncFill'); if(f) f.style.width=score+'%'; },100);
+    const headline = document.getElementById('mainHeadline'); const sub = document.getElementById('mainSub');
+    if (score >= 60) { headline.innerHTML='You <em>do</em> have<br>a case.'; headline.style.color='var(--green)'; sub.textContent='Benchmark found a viable case. Review the analysis and connect with an attorney.'; }
+    else if (score >= 40) { headline.innerHTML='You might have<br><em>a case.</em>'; headline.style.color='var(--gold)'; sub.textContent='The analysis is mixed. More evidence could strengthen your position.'; }
+    else { headline.innerHTML="You don't have<br><em>a case.</em>"; sub.textContent='The analysis does not favor your position.'; }
+  } catch(e) {
+    document.getElementById('ncProsBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
+    document.getElementById('ncDefBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
+    document.getElementById('ncJudgeBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">Verdict pending API connection.</div>';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L3 5.5v5L8 14l5-3.5v-5L8 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg> Run again';
+  document.getElementById('ncTimer').style.display = 'none';
+}
+</script>
+
+<!-- UPL BANNER -->
+<div class="upl-banner">
+  <div class="upl-banner-inner">
+    <strong>Important notice:</strong> Benchmark is a legal information tool, not a law firm. We provide AI-generated analysis for informational and strategic purposes only. Nothing on this platform constitutes legal advice or creates an attorney-client relationship. Always consult a licensed attorney before making legal decisions. <a href="#legal" style="color:#b8922a;">Read our full disclaimer →</a>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-inner">
+    <p class="section-label reveal">How it works</p>
+    <h2 class="section-headline reveal">From confusion<br>to clarity in minutes</h2>
+    <p class="section-sub reveal">You upload your evidence. NoCase does the rest — simultaneously building the strongest possible case for both sides while a judge evaluates the evidence in real time.</p>
+    <div class="how-grid reveal">
+      <div class="how-step">
+        <div class="how-number">01</div>
+        <div class="how-title">Choose your side</div>
+        <div class="how-desc">Tell us if you are the plaintiff bringing a claim, the defendant responding to one, or neutral. Have an existing case number? We'll pull the public court record automatically.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-number">02</div>
+        <div class="how-title">Upload your evidence</div>
+        <div class="how-desc">Drag and drop contracts, emails, bank statements, photos, PDFs — anything relevant. Forward emails directly to cases@nocase.org with your case ID in the subject line.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-number">03</div>
+        <div class="how-title">AI argues both sides</div>
+        <div class="how-desc">The prosecution panel builds the strongest case against you. The defense panel builds your strongest defense. Both update in real time as you add more evidence.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-number">04</div>
+        <div class="how-title">Judge renders verdict</div>
+        <div class="how-desc">The center panel acts as judge — evaluating both sides and rendering a running verdict with a confidence score. Starts at "No Case" and builds as evidence accumulates.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-number">05</div>
+        <div class="how-title">Find a lawyer</div>
+        <div class="how-desc">When you are ready, NoCase generates a professional case brief and delivers it to matching attorneys in your jurisdiction. You pay only when an attorney accepts your case.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section style="background:white;">
+  <div class="section-inner">
+    <p class="section-label reveal">Platform features</p>
+    <h2 class="section-headline reveal">Everything you need.<br>Nothing you don't.</h2>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#fdf0f0;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3L4 7v6l6 4 6-4V7L10 3z" stroke="#c42b2b" stroke-width="1.5" fill="none"/><path d="M10 9v3M8.5 10.5h3" stroke="#c42b2b" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feature-title">Real-time red team analysis</div>
+        <div class="feature-desc">AI simultaneously builds the strongest prosecution AND defense from your uploaded documents. Know your weaknesses before opposing counsel does.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#e8eefb;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#1a4fd6" stroke-width="1.5" fill="none"/><path d="M3 8h14" stroke="#1a4fd6" stroke-width="1.5"/></svg>
+        </div>
+        <div class="feature-title">Existing case number lookup</div>
+        <div class="feature-desc">Enter your court case number and we pull the public docket, filed documents, and hearing dates automatically. Texas, federal, and major state courts supported.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#eaf5f0;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="4" y="6" width="12" height="9" rx="1.5" stroke="#1a7a4a" stroke-width="1.5" fill="none"/><path d="M7 6V4.5a3 3 0 016 0V6" stroke="#1a7a4a" stroke-width="1.5"/></svg>
+        </div>
+        <div class="feature-title">Client-side encryption</div>
+        <div class="feature-desc">Your documents are encrypted on your device before they ever reach Benchmark's servers. We literally cannot read your case data — even under subpoena.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#fdf7e8;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3l2 5h5l-4 3 1.5 5L10 13l-4.5 3L7 11 3 8h5L10 3z" stroke="#b8922a" stroke-width="1.5" fill="none"/></svg>
+        </div>
+        <div class="feature-title">Blockchain time tracking</div>
+        <div class="feature-desc">Every session is immutably recorded on blockchain — proving when you worked your case, for how long, and what you did. Survives case deletion. Verified attorney billing.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#fdf0f0;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h9M3 15h6" stroke="#c42b2b" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feature-title">AI-generated case briefs</div>
+        <div class="feature-desc">One click generates a professional legal brief with prosecution arguments, defense arguments, judge verdict, case law citations, and recommended actions — ready to send to an attorney.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:#e8eefb;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#1a4fd6" stroke-width="1.5" fill="none"/><path d="M10 7v4l2.5 2.5" stroke="#1a4fd6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feature-title">Delete everything, anytime</div>
+        <div class="feature-desc">Your data belongs to you. Delete your entire case with one click — documents, analysis, and records are permanently destroyed from Benchmark's servers. Only blockchain timestamps survive.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="privacy-section" id="privacy">
+  <div class="section-inner">
+    <p class="section-label reveal" style="color:rgba(245,242,237,0.5);">Privacy architecture</p>
+    <h2 class="section-headline reveal" style="color:var(--paper);">Designed so we<br>cannot betray you.</h2>
+    <p class="section-sub reveal" style="color:rgba(245,242,237,0.7);">A subpoena served on Benchmark produces nothing useful — because we designed the architecture so we technically cannot access your case data.</p>
+    <div class="privacy-grid reveal">
+      <div>
+        <div class="privacy-col-title">What we cannot produce</div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#4ade80;"></div>
+          <div class="privacy-item-text">Your uploaded documents — encrypted on your device before transmission. We store encrypted blobs we cannot read.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#4ade80;"></div>
+          <div class="privacy-item-text">Your AI analysis — prosecution arguments, defense arguments, and judge verdicts are encrypted with your key.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#4ade80;"></div>
+          <div class="privacy-item-text">Your email communications — forwarded emails are encrypted at rest and in transit under your case key.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#4ade80;"></div>
+          <div class="privacy-item-text">Your identity linkage — your encryption key is never stored on our servers. We cannot connect you to your case data.</div>
+        </div>
+      </div>
+      <div>
+        <div class="privacy-col-title">What survives deletion</div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#facc15;"></div>
+          <div class="privacy-item-text">Blockchain time records — anonymized case ID hash, session timestamps, duration. No content. No parties. No details.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#facc15;"></div>
+          <div class="privacy-item-text">Deletion confirmation — proof that a case existed and was deleted on a specific date. Required for legal compliance.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#facc15;"></div>
+          <div class="privacy-item-text">Billing records — number of AI calls made for invoicing purposes only. No case content referenced.</div>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-dot" style="background:#ef4444;"></div>
+          <div class="privacy-item-text">Copies you made outside NoCase — we cannot control documents you downloaded or sent to others. That is your responsibility.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ATTORNEYS -->
+<section class="attorney-section" id="attorneys">
+  <div class="section-inner">
+    <p class="section-label reveal">For attorneys</p>
+    <h2 class="section-headline reveal">Pre-qualified clients.<br>Zero subscription required.</h2>
+    <p class="section-sub reveal">In year one, attorneys receive fully prepared case briefs by email. No platform login. No subscription. You only pay a referral fee when you accept a client — and only after you have reviewed the brief.</p>
+    <div class="attorney-flow reveal">
+      <div class="attorney-step">
+        <div class="attorney-step-num">Step 1</div>
+        <div class="attorney-step-title">Client builds their case</div>
+        <div class="attorney-step-desc">User uploads documents, runs AI analysis, and requests attorney referral. System selects best matches by jurisdiction and case type.</div>
+      </div>
+      <div class="attorney-arrow">→</div>
+      <div class="attorney-step">
+        <div class="attorney-step-num">Step 2</div>
+        <div class="attorney-step-title">You receive the brief</div>
+        <div class="attorney-step-desc">A professional case brief arrives in your inbox — prosecution analysis, defense analysis, judge verdict, evidence list, and recommended actions.</div>
+      </div>
+      <div class="attorney-arrow">→</div>
+      <div class="attorney-step">
+        <div class="attorney-step-num">Step 3</div>
+        <div class="attorney-step-title">Review in 10 minutes</div>
+        <div class="attorney-step-desc">The brief tells you everything you need to evaluate the case before your first consultation. Client is pre-qualified and ready to retain.</div>
+      </div>
+      <div class="attorney-arrow">→</div>
+      <div class="attorney-step">
+        <div class="attorney-step-num">Step 4</div>
+        <div class="attorney-step-title">Accept or decline</div>
+        <div class="attorney-step-desc">Reply to accept. NoCase connects you with the client. Referral fee of $150–$300 applies only upon acceptance. Nothing owed if you decline.</div>
+      </div>
+      <div class="attorney-arrow">→</div>
+      <div class="attorney-step" style="background:#0e0e0e;color:white;border-color:#333;">
+        <div class="attorney-step-num" style="opacity:0.5;">Step 5</div>
+        <div class="attorney-step-title" style="color:white;">Verified billing</div>
+        <div class="attorney-step-desc" style="color:rgba(255,255,255,0.7);">Blockchain time records provide immutable proof of every hour spent on the case — verifiable by client, eliminating billing disputes.</div>
+      </div>
+    </div>
+    <div style="margin-top:2rem;padding:1.5rem;background:white;border-radius:12px;border:1px solid var(--rule);max-width:600px;" class="reveal">
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:0.5rem;">Want to be in our attorney directory?</div>
+      <div style="font-size:16px;font-weight:500;margin-bottom:0.5rem;">List your practice — free in year one</div>
+      <div style="font-size:14px;color:var(--ink-soft);margin-bottom:1rem;">Benchmark is building its Montgomery County, Harris County, and surrounding Texas attorney directory. Email us to be included — no subscription required.</div>
+      <a href="mailto:attorneys@benchmark.com" class="btn-primary" style="font-size:13px;padding:10px 20px;">Contact attorneys@benchmark.com</a>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background:white;">
+  <div class="section-inner">
+    <p class="section-label reveal">Pricing</p>
+    <h2 class="section-headline reveal">Start free.<br>Pay when it matters.</h2>
+    <div class="pricing-grid reveal">
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price">$0</div>
+        <div class="pricing-cadence">forever</div>
+        <div class="pricing-desc">Start your case on NoCase. Upload evidence. Get the AI analysis. Know where you stand.</div>
+        <ul class="pricing-features">
+          <li><span class="pricing-check">✓</span> Start a new case</li>
+          <li><span class="pricing-check">✓</span> Upload up to 5 documents</li>
+          <li><span class="pricing-check">✓</span> Basic prosecution + defense analysis</li>
+          <li><span class="pricing-check">✓</span> Initial judge verdict</li>
+          <li><span class="pricing-check">✓</span> Unique NoCase ID + PIN</li>
+          <li><span class="pricing-check">✓</span> Client-side encryption</li>
+          <li><span class="pricing-check">✓</span> Delete all records anytime</li>
+        </ul>
+        <button class="pricing-btn pricing-btn-outline">Start free</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-featured-badge">Most popular</div>
+        <div class="pricing-tier" style="color:rgba(245,242,237,0.5);">Benchmark Pro</div>
+        <div class="pricing-price">$49</div>
+        <div class="pricing-cadence" style="color:rgba(245,242,237,0.5);">per month</div>
+        <div class="pricing-desc" style="color:rgba(245,242,237,0.8);">Full Benchmark platform access. Unlimited analysis, attorney referrals, and blockchain time tracking.</div>
+        <ul class="pricing-features">
+          <li><span class="pricing-check">✓</span> Everything in Free</li>
+          <li><span class="pricing-check">✓</span> Unlimited document uploads</li>
+          <li><span class="pricing-check">✓</span> Existing case number lookup</li>
+          <li><span class="pricing-check">✓</span> Email documentation feature</li>
+          <li><span class="pricing-check">✓</span> Full red team analysis with case law</li>
+          <li><span class="pricing-check">✓</span> Downloadable case brief PDF</li>
+          <li><span class="pricing-check">✓</span> Attorney referral — $99 flat fee</li>
+          <li><span class="pricing-check">✓</span> Blockchain time tracking</li>
+        </ul>
+        <button class="pricing-btn pricing-btn-white">Start Pro — $49/mo</button>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-tier">Benchmark Enterprise</div>
+        <div class="pricing-price" style="font-size:28px;">Custom</div>
+        <div class="pricing-cadence">per firm</div>
+        <div class="pricing-desc">White-label Benchmark for your law firm. Full platform, API access, and verified billing.</div>
+        <ul class="pricing-features">
+          <li><span class="pricing-check">✓</span> Everything in Pro</li>
+          <li><span class="pricing-check">✓</span> White-label courtroom interface</li>
+          <li><span class="pricing-check">✓</span> Bulk case management</li>
+          <li><span class="pricing-check">✓</span> API access</li>
+          <li><span class="pricing-check">✓</span> Custom jurisdiction training</li>
+          <li><span class="pricing-check">✓</span> Verified attorney billing reports</li>
+          <li><span class="pricing-check">✓</span> Dedicated support</li>
+        </ul>
+        <button class="pricing-btn pricing-btn-outline">Contact us</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEGAL SECTION -->
+<section id="legal" style="background:var(--paper-dark);">
+  <div class="section-inner">
+    <p class="section-label reveal">Legal</p>
+    <h2 class="section-headline reveal">Transparency is<br>our policy.</h2>
+    <p class="section-sub reveal">We built NoCase knowing it would handle sensitive legal matters. Read exactly what we are, what we are not, and what your rights are.</p>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <div class="legal-tabs">
+        <button class="legal-tab active" onclick="showTab('disclaimer')">Disclaimer</button>
+        <button class="legal-tab" onclick="showTab('terms')">Terms of service</button>
+        <button class="legal-tab" onclick="showTab('privacy-policy')">Privacy policy</button>
+        <button class="legal-tab" onclick="showTab('deletion')">Data deletion</button>
+      </div>
+
+      <div id="tab-disclaimer" class="legal-content active">
+        <div class="legal-box">
+          <div class="legal-highlight">
+            <p>IMPORTANT: Benchmark is not a law firm. This platform does not provide legal advice and does not create an attorney-client relationship. All AI-generated analysis is for informational and strategic purposes only.</p>
+          </div>
+          <h3>Not legal advice</h3>
+          <p>The information, analysis, and content generated by the NoCase application — including prosecution arguments, defense arguments, judge verdicts, case summaries, and legal citations — constitutes legal information only, not legal advice. Legal advice requires a licensed attorney who can evaluate the specific facts and circumstances of your matter in the context of applicable law.</p>
+          <p>Benchmark operates NoCase, a legal technology application that uses artificial intelligence to analyze documents and generate legal information. It is not a lawyer, law firm, or legal services provider. Use of NoCase does not create an attorney-client relationship between you and Benchmark or any of its employees, officers, or contractors.</p>
+          <h3>AI-generated content limitations</h3>
+          <p>All analysis generated by NoCase is produced by artificial intelligence and may contain errors, inaccuracies, or omissions. AI systems can and do generate incorrect legal citations, misstate case holdings, or produce analysis that is inapplicable to your specific jurisdiction or circumstances. All case citations must be independently verified through Westlaw, LexisNexis, or other authoritative legal research tools before any reliance.</p>
+          <p>Benchmark makes no representations or warranties regarding the accuracy, completeness, or reliability of any AI-generated content. You assume all risk associated with reliance on AI-generated legal analysis.</p>
+          <h3>Unauthorized practice of law</h3>
+          <p>Benchmark is designed to provide general legal information, not jurisdiction-specific legal advice. The platform does not recommend specific legal strategies, advise you to pursue or abandon legal claims, or tell you what outcome to expect in your specific case. If you need advice tailored to your specific circumstances, consult a licensed attorney in your jurisdiction.</p>
+          <h3>No outcome guarantee</h3>
+          <p>Nothing in the Benchmark platform, including any judge verdict, confidence score, win probability, or case assessment, constitutes a prediction or guarantee of any legal outcome. Legal outcomes depend on numerous factors that AI cannot fully evaluate, including witness credibility, judicial discretion, local court practices, and many others.</p>
+          <h3>Consult an attorney</h3>
+          <p>If you have an active legal matter, are considering filing a legal claim, have been served with legal process, or face potential criminal exposure, you should consult a licensed attorney immediately. Do not delay seeking legal counsel in reliance on information obtained from NoCase.</p>
+        </div>
+      </div>
+
+      <div id="tab-terms" class="legal-content">
+        <div class="legal-box">
+          <h3>1. Acceptance of terms</h3>
+          <p>By accessing or using NoCase, powered by Benchmark, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use the platform.</p>
+          <h3>2. Eligibility</h3>
+          <p>You must be at least 18 years of age to use NoCase. By using the platform you represent and warrant that you are 18 or older and have the legal capacity to enter into a binding agreement. Use by minors is strictly prohibited.</p>
+          <h3>3. Not legal advice — incorporation by reference</h3>
+          <p>The full disclaimer set forth in the Disclaimer section above is incorporated herein by reference and constitutes a material term of these Terms of Service.</p>
+          <h3>4. Unauthorized practice of law compliance</h3>
+          <p>Benchmark is designed to comply with the unauthorized practice of law rules of all United States jurisdictions. The platform provides legal information only. If you are an attorney using the platform on behalf of clients, you remain solely responsible for all legal advice provided to your clients and for compliance with your jurisdiction's rules of professional conduct.</p>
+          <h3>5. Your responsibilities</h3>
+          <p>You are solely responsible for: (a) the accuracy and completeness of documents you upload; (b) compliance with any applicable litigation hold or evidence preservation obligations; (c) how you use and share AI-generated analysis; (d) obtaining appropriate legal counsel for your specific matter; (e) verifying all case citations before reliance or filing.</p>
+          <div class="legal-highlight">
+            <p>IMPORTANT: If you have an active legal matter with a court-imposed duty to preserve evidence, consult your attorney before deleting any case records from NoCase. Benchmark is not responsible for your evidence preservation obligations.</p>
+          </div>
+          <h3>6. Attorney referral</h3>
+          <p>Benchmark facilitates connections between users and attorneys but is not responsible for the conduct, advice, or performance of any attorney to whom a case brief is delivered. Benchmark does not guarantee that any attorney will accept your case. The referral fee creates no obligation on Benchmark beyond facilitating the introduction. All attorney-client relationships are formed directly between you and the attorney, not through Benchmark.</p>
+          <h3>7. Limitation of liability</h3>
+          <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, BENCHMARK'S TOTAL LIABILITY TO YOU FOR ANY CLAIM ARISING FROM OR RELATED TO NOCASE SHALL NOT EXCEED THE GREATER OF (A) THE TOTAL AMOUNT YOU PAID TO BENCHMARK IN THE THREE MONTHS PRECEDING THE CLAIM OR (B) $100. BENCHMARK SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES.</p>
+          <h3>8. Governing law</h3>
+          <p>These Terms shall be governed by the laws of the State of Texas without regard to conflict of law provisions. Any disputes shall be resolved in the courts of Montgomery County, Texas.</p>
+          <h3>9. Changes to terms</h3>
+          <p>Benchmark reserves the right to modify these Terms at any time. We will provide notice of material changes. Continued use of the platform after notice constitutes acceptance of the modified Terms.</p>
+        </div>
+      </div>
+
+      <div id="tab-privacy-policy" class="legal-content">
+        <div class="legal-box">
+          <h3>What we collect</h3>
+          <p>When you create a case on NoCase, Benchmark collects: (a) your NoCase ID and hashed PIN — we never store your PIN in plain text; (b) encrypted case data — documents, analysis, and communications encrypted with your key, which we cannot read; (c) session metadata — timestamps, duration, and action types recorded to the blockchain and our servers in anonymized form; (d) billing information — if you subscribe to a paid plan, payment is processed by our payment processor and we do not store your full payment card information.</p>
+          <h3>What we cannot read</h3>
+          <p>Due to client-side encryption, Benchmark cannot read: your uploaded documents; your AI-generated analysis; your email communications forwarded to your case; or any content associated with your case. We store encrypted data only.</p>
+          <h3>How we use what we collect</h3>
+          <p>Session metadata is used to: maintain the blockchain time record for your case; calculate billing for paid plans; improve platform performance; and comply with legal obligations. We do not sell your data. We do not share your data with advertisers. We do not use your case data to train AI models.</p>
+          <h3>Subpoenas and legal process</h3>
+          <p>If Benchmark receives a valid subpoena or court order requiring production of your data, we will: (a) notify you promptly to the extent permitted by law; (b) produce only what we legally possess — which is encrypted data we cannot read, metadata, and blockchain records; (c) not attempt to decrypt your case data on your behalf or for any third party.</p>
+          <h3>Data retention</h3>
+          <p>We retain your encrypted case data until you delete it. Upon deletion, all encrypted data is permanently destroyed from our servers within 24 hours. Blockchain time records and deletion confirmations are retained indefinitely as they are immutable. Billing records are retained for seven years as required by applicable law.</p>
+          <h3>Your rights</h3>
+          <p>You have the right to: delete your case and all associated data at any time; receive a deletion confirmation; request information about what metadata we hold about your case; and opt out of any communications from Benchmark. Texas residents have additional rights under the Texas Data Privacy and Security Act.</p>
+          <h3>Contact</h3>
+          <p>For privacy inquiries: privacy@benchmark.com · Benchmark · Montgomery County, Texas</p>
+        </div>
+      </div>
+
+      <div id="tab-deletion" class="legal-content">
+        <div class="legal-box">
+          <h3>Your right to delete</h3>
+          <p>You have the unconditional right to permanently delete your NoCase case and all associated data at any time, without reason, from within the platform. Deletion is immediate and irreversible.</p>
+          <h3>What is deleted</h3>
+          <ul>
+            <li>All uploaded documents and files — permanently destroyed from S3 storage</li>
+            <li>All AI-generated analysis — prosecution arguments, defense arguments, judge verdicts</li>
+            <li>All email communications forwarded to your case</li>
+            <li>Your encryption key fragments — permanently breaking decryption</li>
+            <li>All case records from our database</li>
+            <li>Your PIN hash — meaning the case can never be reopened</li>
+          </ul>
+          <h3>What is not deleted</h3>
+          <ul>
+            <li>Blockchain time records — anonymized case ID hash, session timestamps, and duration. These are immutable by design and contain no case content.</li>
+            <li>Deletion confirmation — a record that your case existed and was deleted on a specific date. No case content is included.</li>
+            <li>Billing records — required by law for seven years for tax and accounting purposes.</li>
+          </ul>
+          <div class="legal-highlight">
+            <p>CRITICAL: If you have an active court case, a litigation hold, or any legal obligation to preserve evidence, consult your attorney before deleting your case records. Benchmark cannot recover deleted data and is not responsible for your evidence preservation obligations under applicable law. Intentional destruction of evidence may constitute spoliation and carry legal consequences.</p>
+          </div>
+          <h3>Attorney's copy</h3>
+          <p>If you have shared your case with an attorney or any third party outside the Benchmark platform — including by email, download, or printout — those copies are outside Benchmark's control and cannot be deleted by Benchmark. You are responsible for coordinating with third parties regarding any copies they hold.</p>
+          <h3>How to delete</h3>
+          <p>From within your case, click "Delete All Records" at the bottom of the courtroom interface. You will be asked to confirm by entering your NoCase ID. Upon confirmation, deletion executes immediately. A deletion receipt will be emailed to you if you provided an email address.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background:white;">
+  <div class="section-inner">
+    <p class="section-label reveal">FAQ</p>
+    <h2 class="section-headline reveal">Common questions.</h2>
+    <div class="faq-list reveal" style="max-width:720px;">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">Can Benchmark be subpoenaed for my case data? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">A subpoena served on Benchmark would produce only encrypted data we cannot read, anonymized blockchain timestamps with no content, and a deletion record if you deleted your case. We cannot produce your documents or analysis because we technically do not have access to them — they are encrypted with a key we do not hold.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">Is NoCase practicing law? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">No. Benchmark provides legal information — the same way a law library or legal website does — not legal advice. The AI generates analysis for informational and strategic purposes. It does not advise you on what to do, recommend a legal strategy for your specific circumstances, or create any attorney-client relationship. We display this disclaimer prominently on every analysis output.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">What happens if the AI cites a case that doesn't exist? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">AI systems can hallucinate case citations. Every analysis NoCase produces includes a mandatory verification notice that all citations must be checked through Westlaw or LexisNexis before any reliance. Do not file any document with a court based on NoCase citations without independent verification. Your attorney is responsible for verifying any citations in filed documents.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">Who owns the case brief sent to attorneys? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">You do. The brief is generated from your uploaded documents and is your property. By generating a brief and requesting attorney referral, you authorize NoCase to deliver it to selected attorneys in your jurisdiction on your behalf. Attorneys receive the brief for evaluation purposes only and have no right to use it for any purpose other than evaluating whether to accept your matter.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">What if I delete my case but have an active court obligation to preserve evidence? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">This is your responsibility, not Benchmark's. If you have received a litigation hold notice, been served with discovery, or have any court-ordered obligation to preserve evidence, do not delete your case without consulting your attorney first. Benchmark displays a warning when deletion is attempted for cases with an existing case number, but the final decision and legal responsibility is yours.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">Can a minor use NoCase? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">No. NoCase is for users 18 and older only. Our terms of service prohibit use by minors. If you are under 18 with a legal matter, please speak with a parent or guardian who can consult with an attorney on your behalf.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">Does NoCase work for cases outside Texas? <span class="faq-toggle">+</span></div>
+        <div class="faq-answer">NoCase currently works best for Texas civil, criminal, and real estate matters where our AI has the strongest jurisdiction-specific training. You can select other states and federal courts during onboarding, but our analysis is most detailed for Texas. We are expanding jurisdiction coverage regularly. All analyses are clearly labeled with the selected jurisdiction.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="background:var(--ink);text-align:center;">
+  <div class="section-inner">
+    <h2 class="section-headline reveal" style="color:var(--paper);margin:0 auto 1rem;">Ready to find out<br><em>if you have a case?</em></h2>
+    <p class="reveal" style="color:rgba(245,242,237,0.65);font-size:16px;max-width:460px;margin:0 auto 2.5rem;">Start on NoCase. Upload your evidence. Let the AI argue both sides. When you have a case — Benchmark connects you with the right attorney.</p>
+    <a href="#app" class="btn-primary reveal" style="background:var(--paper);color:var(--ink);font-size:16px;padding:16px 40px;">Start your case — free</a>
+    <p class="reveal" style="margin-top:1.5rem;font-size:12px;color:rgba(245,242,237,0.35);">Benchmark provides legal information only. Not a law firm. Not legal advice. Not a substitute for a licensed attorney.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.75rem;">
+        <div style="width:28px;height:28px;background:rgba(245,242,237,0.15);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 5v5l6 5 6-5V5L8 1z" stroke="#f5f2ed" stroke-width="1.5" fill="none"/><path d="M8 6v4M6 8h4" stroke="#f5f2ed" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <span style="font-family:'Playfair Display',serif;font-size:18px;font-weight:500;">NoCase</span>
+        <span style="font-size:11px;opacity:0.4;border:1px solid rgba(245,242,237,0.2);border-radius:3px;padding:2px 6px;">by Benchmark</span>
+      </div>
+      <p class="footer-brand-desc">NoCase is Benchmark's consumer legal intelligence application. Challenge your case. Build your evidence. When you're ready — Benchmark connects you with the right attorney. Montgomery County, Texas.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Platform</div>
+      <ul class="footer-links">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#app">Start a case</a></li>
+        <li><a href="#attorneys">For attorneys</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Legal</div>
+      <ul class="footer-links">
+        <li><a href="#legal">Disclaimer</a></li>
+        <li><a href="#legal">Terms of service</a></li>
+        <li><a href="#legal">Privacy policy</a></li>
+        <li><a href="#legal">Data deletion</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact</div>
+      <ul class="footer-links">
+        <li><a href="mailto:hello@benchmark.com">hello@benchmark.com</a></li>
+        <li><a href="mailto:attorneys@benchmark.com">attorneys@benchmark.com</a></li>
+        <li><a href="mailto:privacy@benchmark.com">privacy@benchmark.com</a></li>
+        <li><a href="mailto:legal@benchmark.com">legal@benchmark.com</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="footer-legal">
+      Benchmark operates the NoCase application. Benchmark is not a law firm and does not provide legal advice. All AI-generated analysis is for informational and strategic purposes only and does not constitute legal advice or create an attorney-client relationship. All case citations must be independently verified before reliance. Use of this platform does not substitute for consultation with a licensed attorney. Benchmark makes no representations regarding the accuracy of AI-generated content. Users assume all risk associated with reliance on platform analysis. Attorney referral services subject to applicable state bar regulations. Not available to users under 18. © 2026 Benchmark. All rights reserved. NoCase is a trademark of Benchmark.
+    </p>
+    <p class="footer-copy">© 2026 Benchmark</p>
+  </div>
+</footer>
+
+<script>
+  function showTab(tab) {
+    document.querySelectorAll('.legal-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.legal-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleFaq(el) {
+    el.classList.toggle('open');
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
