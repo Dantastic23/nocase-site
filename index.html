@@ -911,7 +911,7 @@ async function ncRunAnalysis() {
   if (userSide === 'Defendant') { document.getElementById('ncDefLabel').textContent = 'DEFENSE — YOUR SIDE'; document.getElementById('ncDefBadge').textContent = 'YOUR SIDE'; }
   ncShowSkeleton('ncProsBody'); ncShowSkeleton('ncJudgeBody'); ncShowSkeleton('ncDefBody');
   const caseData = { facts: desc, jurisdiction: 'Texas', userSide };
-  const LAMBDA = 'https://ck4xgjmk0l.execute-api.us-east-1.amazonaws.com/prod/analyze';
+  const LAMBDA = 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
   try {
     const [pr, dr] = await Promise.all([
       fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'red_team_plaintiff', caseData, caseType }) }),
