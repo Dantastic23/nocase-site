@@ -876,14 +876,16 @@ async function ncRunAnalysis() {
   const caseData = { facts: desc, jurisdiction: 'Texas', userSide };
   const LAMBDA = 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
   try {
-    const [pr, dr, jr, cr] = await Promise.all([
+    const [pr, dr, jr, cr, qr] = await Promise.all([
       fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'red_team_plaintiff', caseData, caseType }) }),
       fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'red_team_defendant', caseData, caseType }) }),
       fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'judge_verdict', caseData, caseType }) }),
-      fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'classify_case', caseData }) })
+      fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'classify_case', caseData }) }),
+      fetch(LAMBDA, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ task:'generate_questions', caseData, caseType }) })
     ]);
-    const [pd, dd, jd, cd] = await Promise.all([pr.json(), dr.json(), jr.json(), cr.json()]);
+    const [pd, dd, jd, cd, qd] = await Promise.all([pr.json(), dr.json(), jr.json(), cr.json(), qr.json()]);
     const pt = pd.result || pd.body || ''; const dt = dd.result || dd.body || ''; const jt = jd.result || jd.body || ''; const ct = cd.result || cd.body || '';
+    const qt = qd.result || qd.body || '';
     const pArgs = ncParseArgs(pt); const dArgs = ncParseArgs(dt);
     document.getElementById('ncProsBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener · Case.law</div>` + pArgs.map((a,i)=>`<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--red);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
     document.getElementById('ncDefBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener · Case.law</div>` + dArgs.map((a,i)=>`<div style="background:var(--blue-light);border-left:3px solid var(--blue);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
@@ -898,6 +900,8 @@ async function ncRunAnalysis() {
     if (score >= 60) { headline.innerHTML='You <em>do</em> have<br>a case.'; headline.style.color='var(--green)'; sub.textContent='Benchmark found a viable case. Review the analysis and connect with an attorney.'; }
     else if (score >= 40) { headline.innerHTML='You might have<br><em>a case.</em>'; headline.style.color='var(--gold)'; sub.textContent='The analysis is mixed. More evidence could strengthen your position.'; }
     else { headline.innerHTML="You don't have<br><em>a case.</em>"; sub.textContent='The analysis does not favor your position.'; }
+  
+    try { window.dispatchEvent(new CustomEvent('nc:analyzed', { detail: { caseData: caseData, caseType: (typeof caseType !== 'undefined' ? caseType : (typeof ct !== 'undefined' ? ct : '')), qt: (typeof qt !== 'undefined' ? qt : ''), score: (typeof score !== 'undefined' ? score : -1), vRaw: (typeof vRaw !== 'undefined' ? vRaw : ''), cRaw: (typeof cRaw !== 'undefined' ? cRaw : -1) } })); } catch(ev){}
   } catch(e) {
     document.getElementById('ncProsBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
     document.getElementById('ncDefBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
@@ -1392,5 +1396,119 @@ async function ncRunAnalysis() {
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
 
+
+<!-- v2.2 Phase A: Q&A refine + 75% lead CTA -->
+<div id="ncQACard" style="display:none;max-width:720px;margin:24px auto;padding:24px;background:#fff;border-radius:12px;border:1px solid #e0e0e0;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+  <h3 style="margin:0 0 8px;color:#d4183d;font-size:20px">Sharpen your assessment</h3>
+  <p style="margin:0 0 18px;color:#555;font-size:14px;line-height:1.5">Answer any of these questions to refine your score. Skip any you do not know.</p>
+  <div id="ncQAList"></div>
+  <button id="ncQASubmit" style="margin-top:8px;padding:12px 22px;background:#d4183d;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:15px;cursor:pointer;">Refine my score</button>
+  <div id="ncQAStatus" style="margin-top:12px;color:#888;font-size:13px"></div>
+</div>
+<div id="ncLeadCTA" style="display:none;max-width:720px;margin:24px auto;padding:30px;background:linear-gradient(135deg,#fff5f5 0%,#fff 100%);border-radius:12px;border:2px solid #d4183d;">
+  <h2 style="margin:0 0 10px;color:#d4183d;font-size:24px">Your case looks strong. Let us prep it properly.</h2>
+  <p style="margin:0 0 20px;color:#333;font-size:15px;line-height:1.5">This was a preliminary read based on what you typed. For a real lawyer-prep packet, we need your documents: contracts, texts, emails, photos, call recordings. Share your info and we will set up uploads.</p>
+  <form id="ncLeadForm" style="display:grid;gap:12px;">
+    <input type="hidden" name="access_key" id="ncW3FKey" value="">
+    <input type="hidden" name="subject" value="New nocase.org lead - 75%+ preliminary score">
+    <input type="hidden" name="from_name" value="nocase.org">
+    <input type="hidden" name="case_summary" id="ncLeadCaseSummary" value="">
+    <input type="hidden" name="case_type" id="ncLeadCaseType" value="">
+    <input type="hidden" name="score" id="ncLeadScore" value="">
+    <input required name="name" placeholder="Your name" style="padding:12px;border:1px solid #ccc;border-radius:6px;font-size:16px">
+    <input required name="email" type="email" placeholder="Email" style="padding:12px;border:1px solid #ccc;border-radius:6px;font-size:16px">
+    <input required name="phone" type="tel" placeholder="Phone" style="padding:12px;border:1px solid #ccc;border-radius:6px;font-size:16px">
+    <button type="submit" style="padding:14px 28px;background:#d4183d;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:16px;cursor:pointer;">Get my lawyer-prep packet</button>
+  </form>
+  <p style="margin:15px 0 0;color:#888;font-size:12px">We will reach out within 1 business day to set up secure document uploads.</p>
+</div>
+<script>
+(function(){
+  var W3F_KEY = ""; /* paste Web3Forms access key here */
+  var lastQs = [];
+  var lastCaseData = null;
+  window.addEventListener("nc:analyzed", function(e){
+    var d = e.detail || {};
+    lastCaseData = d.caseData || null;
+    var qt = d.qt || "";
+    var matches = qt.match(/Q[1-4]:\s*([^\n]+)/g) || [];
+    var qs = matches.map(function(m){ return m.replace(/^Q[1-4]:\s*/, "").trim(); }).filter(Boolean);
+    lastQs = qs;
+    var qaList = document.getElementById("ncQAList");
+    if (qaList && qs.length >= 3) {
+      qaList.innerHTML = qs.map(function(q, i){
+        var safe = q.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return '<div style="margin-bottom:16px;"><label style="display:block;font-weight:500;margin-bottom:6px;color:#333;font-size:14px">' + (i+1) + '. ' + safe + '</label><textarea data-q="' + i + '" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box" placeholder="Type your answer, or leave blank to skip"></textarea></div>';
+      }).join("");
+      document.getElementById("ncQACard").style.display = "block";
+      setTimeout(function(){ document.getElementById("ncQACard").scrollIntoView({behavior:"smooth", block:"start"}); }, 200);
+    }
+    var score = typeof d.score === "number" ? d.score : -1;
+    var cta = document.getElementById("ncLeadCTA");
+    if (score >= 75) {
+      document.getElementById("ncLeadCaseSummary").value = JSON.stringify(d.caseData || "").slice(0, 800);
+      document.getElementById("ncLeadCaseType").value = d.caseType || "";
+      document.getElementById("ncLeadScore").value = String(score);
+      cta.style.display = "block";
+    } else if (cta) {
+      cta.style.display = "none";
+    }
+  });
+  var submitBtn = document.getElementById("ncQASubmit");
+  if (submitBtn) submitBtn.addEventListener("click", function(){
+    var textareas = document.querySelectorAll("#ncQAList textarea");
+    var pairs = [];
+    textareas.forEach(function(t){
+      var idx = parseInt(t.dataset.q);
+      var ans = (t.value || "").trim();
+      if (ans && lastQs[idx]) pairs.push("Q: " + lastQs[idx] + "\nA: " + ans);
+    });
+    if (!pairs.length) {
+      document.getElementById("ncQAStatus").textContent = "Answer at least one question to refine.";
+      return;
+    }
+    var status = document.getElementById("ncQAStatus");
+    status.textContent = "Refining your assessment...";
+    submitBtn.disabled = true;
+    var origFacts = (lastCaseData && lastCaseData.facts) || "";
+    var newFacts = origFacts + "\n\nAdditional facts from follow-up:\n" + pairs.join("\n\n");
+    var ta = document.getElementById("ncCase") || document.querySelector("textarea[name='caseDesc']") || document.querySelector("#ncDefBody textarea") || document.querySelector("textarea");
+    if (ta) {
+      ta.value = newFacts;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    var btn = Array.from(document.querySelectorAll("button")).find(function(b){ return /analyz|check|score|verdict|get my/i.test(b.textContent) && b.id !== "ncQASubmit" && b.type !== "submit"; });
+    if (btn) {
+      document.getElementById("ncQACard").style.display = "none";
+      setTimeout(function(){ btn.click(); }, 100);
+    } else {
+      status.textContent = "Could not find the analyze button automatically. Please scroll up and click it.";
+      submitBtn.disabled = false;
+    }
+  });
+  var leadForm = document.getElementById("ncLeadForm");
+  if (leadForm) leadForm.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var keyEl = document.getElementById("ncW3FKey");
+    if (W3F_KEY) keyEl.value = W3F_KEY;
+    if (!keyEl.value) {
+      alert("Lead form not configured yet. Please email dan@smartlockus.com directly.");
+      return;
+    }
+    var fd = new FormData(e.target);
+    var endpoint = "https://api." + "web3forms" + ".com/submit";
+    try {
+      var res = await fetch(endpoint, { method: "POST", body: fd });
+      if (res.ok) {
+        e.target.innerHTML = '<p style="color:#198754;font-weight:600;margin:0">Got it. We will reach out within 1 business day to set up your document uploads.</p>';
+      } else {
+        alert("Submission failed. Please email dan@smartlockus.com directly.");
+      }
+    } catch (err) {
+      alert("Network error. Please email dan@smartlockus.com directly.");
+    }
+  });
+})();
+</script>
 </body>
 </html>
