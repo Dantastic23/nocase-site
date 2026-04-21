@@ -870,6 +870,8 @@ async function ncRunAnalysis() {
   btn.innerHTML = 'Analyzing...';
   document.getElementById('ncCourtroom').style.display = 'block';
   document.getElementById('ncTimer').style.display = 'block';
+  document.getElementById('ncProsLabel').textContent = 'PROSECUTION'; document.getElementById('ncProsBadge').textContent = 'Plaintiff';
+  document.getElementById('ncDefLabel').textContent = 'DEFENSE'; document.getElementById('ncDefBadge').textContent = 'Defendant';
   if (userSide === 'Plaintiff') { document.getElementById('ncProsLabel').textContent = 'PROSECUTION — YOUR SIDE'; document.getElementById('ncProsBadge').textContent = 'YOUR SIDE'; }
   if (userSide === 'Defendant') { document.getElementById('ncDefLabel').textContent = 'DEFENSE — YOUR SIDE'; document.getElementById('ncDefBadge').textContent = 'YOUR SIDE'; }
   ncShowSkeleton('ncProsBody'); ncShowSkeleton('ncJudgeBody'); ncShowSkeleton('ncDefBody');
@@ -894,7 +896,7 @@ async function ncRunAnalysis() {
     if (score >= 70) { label='Prosecution Favored'; color='var(--red)'; bg='var(--red-light)'; }
     else if (score >= 50) { label='Contested — Mixed Claims'; color='var(--gold)'; bg='var(--gold-light)'; }
     else { label='Defense Favored'; color='var(--blue)'; bg='var(--blue-light)'; }
-    document.getElementById('ncJudgeBody').innerHTML = `<div style="background:${bg};border-radius:8px;padding:0.875rem;margin-bottom:10px;text-align:center;"><div style="font-size:13px;font-weight:500;color:${color};margin-bottom:8px;">${label}</div><div style="height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden;margin-bottom:5px;"><div id="ncFill" style="height:100%;width:0%;background:${color};border-radius:3px;transition:width 1.5s ease;"></div></div><div style="font-size:11px;color:var(--ink-muted);">Confidence: ${score}%</div></div><div style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px;">Based on your facts and verified case law, the ${score>=50?'prosecution':'defense'} presents the stronger initial position.</div><button onclick="alert('Attorney referral coming soon. Email hello@benchmark.com.')" style="width:100%;padding:8px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Find me a lawyer →</button>`;
+    document.getElementById('ncJudgeBody').innerHTML = `<div style="background:${bg};border-radius:8px;padding:0.875rem;margin-bottom:10px;text-align:center;"><div style="font-size:13px;font-weight:500;color:${color};margin-bottom:8px;">${label}</div><div style="height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden;margin-bottom:5px;"><div id="ncFill" style="height:100%;width:0%;background:${color};border-radius:3px;transition:width 1.5s ease;"></div></div><div style="font-size:11px;color:var(--ink-muted);">Plaintiff: ${userSide==='Plaintiff'?score:100-score}% · Defense: ${userSide==='Plaintiff'?100-score:score}%</div></div><div style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px;">Based on your facts and verified case law, the ${(userSide==='Plaintiff'?score:100-score)>=50?'prosecution':'defense'} presents the stronger initial position.</div><button onclick="alert('Attorney referral coming soon. Email hello@benchmark.com.')" style="width:100%;padding:8px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Find me a lawyer →</button>`;
     setTimeout(()=>{ const f=document.getElementById('ncFill'); if(f) f.style.width=score+'%'; },100);
     const headline = document.getElementById('mainHeadline'); const sub = document.getElementById('mainSub');
     if (score >= 60) { headline.innerHTML='You <em>do</em> have<br>a case.'; headline.style.color='var(--green)'; sub.textContent='Benchmark found a viable case. Review the analysis and connect with an attorney.'; }
@@ -1440,6 +1442,9 @@ async function ncRunAnalysis() {
         var safe = q.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return '<div style="margin-bottom:16px;"><label style="display:block;font-weight:500;margin-bottom:6px;color:#333;font-size:14px">' + (i+1) + '. ' + safe + '</label><textarea data-q="' + i + '" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box" placeholder="Type your answer, or leave blank to skip"></textarea></div>';
       }).join("");
+      var _cr=document.getElementById("ncCourtroom"), _qc=document.getElementById("ncQACard"), _ct=document.getElementById("ncLeadCTA");
+      if(_cr && _qc) _cr.insertAdjacentElement("afterend",_qc);
+      if(_qc && _ct) _qc.insertAdjacentElement("afterend",_ct);
       document.getElementById("ncQACard").style.display = "block";
       setTimeout(function(){ document.getElementById("ncQACard").scrollIntoView({behavior:"smooth", block:"start"}); }, 200);
     }
