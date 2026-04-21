@@ -1477,7 +1477,7 @@ async function ncRunAnalysis() {
       ta.value = newFacts;
       ta.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    var btn = Array.from(document.querySelectorAll("button")).find(function(b){ return /analyz|check|score|verdict|get my/i.test(b.textContent) && b.id !== "ncQASubmit" && b.type !== "submit"; });
+    var btn = document.getElementById("ncRunBtn");
     if (btn) {
       document.getElementById("ncQACard").style.display = "none";
       setTimeout(function(){ btn.click(); }, 100);
