@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NoCase — Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500;1,600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- PDF.js for in-browser PDF text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<style>
+  :root {
+    --ink: #0e0e0e; --ink-soft: #3a3a3a; --ink-muted: #7a7a7a;
+    --paper: #f5f2ed; --paper-dark: #ede9e2; --rule: #d4cfc7;
+    --blue: #1a4fd6; --blue-light: #e8eefb;
+    --red: #c42b2b; --red-light: #fdf0f0;
+    --gold: #b8922a; --gold-light: #fdf7e8;
+    --green: #1a7a4a; --green-light: #eaf5f0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); font-size: 14px; line-height: 1.5; height: 100vh; display: flex; flex-direction: column; }
+  h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.015em; margin: 0; color: var(--ink); font-weight: 700; }
+  .italic { font-style: italic; font-weight: 500; }
+  code { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 0.85em; background: var(--paper-dark); padding: 0.05rem 0.3rem; border-radius: 3px; }
+
+  .app-header { background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.7rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .brand { display: flex; align-items: center; gap: 0.55rem; }
+  .brand-mark { width: 28px; height: 28px; background: var(--ink); color: var(--paper); border-radius: 4px; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 0.9rem; }
+  .brand-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.1rem; }
+  .brand-chip { font-size: 0.66rem; color: var(--ink-muted); border: 1px solid var(--rule); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.25rem; }
+  .beta-pill { display: inline-block; background: var(--gold); color: var(--ink); font-size: 0.62rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 3px; letter-spacing: 0.1em; margin-left: 0.4rem; vertical-align: middle; }
+  .pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.72rem; font-weight: 500; border: 1px solid var(--rule); }
+  .pill.ok { background: var(--green-light); border-color: #c4e6d3; color: var(--green); }
+  .pill.warn { background: var(--gold-light); border-color: #e9d8a2; color: var(--gold); }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Onboarding */
+  .onboarding { flex: 1; display: grid; place-items: center; padding: 2rem; }
+  .onboarding.hidden { display: none; }
+  .onboarding-card { background: white; border: 1px solid var(--rule); border-radius: 10px; padding: 2.5rem 3rem; max-width: 620px; text-align: center; box-shadow: 0 12px 40px rgba(14,14,14,0.06); }
+  .onboarding-pill { display: inline-flex; gap: 0.4rem; align-items: center; background: var(--ink); color: var(--paper); padding: 0.3rem 0.9rem; border-radius: 100px; font-size: 0.78rem; font-weight: 500; margin-bottom: 1.4rem; }
+  .onboarding-pill .dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; }
+  .onboarding h1 { font-size: 2.4rem; line-height: 1.05; margin-bottom: 0.6rem; }
+  .onboarding h1 .accent { font-style: italic; color: var(--ink-muted); font-weight: 600; }
+  .onboarding p { color: var(--ink-soft); font-size: 1rem; max-width: 480px; margin: 0 auto 1.6rem; }
+  .onboarding-cta { display: inline-flex; padding: 0.85rem 1.6rem; background: var(--ink); color: var(--paper); border: none; border-radius: 6px; font-family: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .onboarding-cta:hover { background: #000; }
+  .onboarding-fine { font-size: 0.8rem; color: var(--ink-muted); margin-top: 1.2rem; line-height: 1.55; }
+  .onboarding-fine strong { color: var(--ink); }
+  .browser-warn { background: var(--red-light); color: var(--red); border: 1px solid #f3c9c9; padding: 0.65rem 0.85rem; border-radius: 5px; font-size: 0.85rem; margin-top: 1rem; }
+
+  /* Workspace */
+  .workspace { display: grid; grid-template-columns: 220px 320px 1fr; flex: 1; min-height: 0; }
+  .workspace.hidden { display: none; }
+  .sidebar { border-right: 1px solid var(--rule); padding: 1rem 0.85rem; background: rgba(255,255,255,0.4); overflow-y: auto; }
+  .sidebar h3 { font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; font-family: 'DM Sans', sans-serif; margin-bottom: 0.5rem; }
+  .sidebar nav a { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.55rem; border-radius: 4px; color: var(--ink-soft); text-decoration: none; font-size: 0.82rem; margin-bottom: 0.1rem; }
+  .sidebar nav a:hover { background: var(--paper-dark); color: var(--ink); }
+  .sidebar nav a.active { background: var(--ink); color: var(--paper); font-weight: 500; }
+  .sidebar nav a .ic { width: 14px; opacity: 0.85; text-align: center; font-size: 0.85rem; }
+  .case-card { background: var(--ink); color: var(--paper); padding: 0.7rem 0.8rem; border-radius: 5px; font-size: 0.75rem; margin-top: 1rem; cursor: pointer; }
+  .case-card:hover { background: #000; }
+  .case-card .label { font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.2rem; }
+  .case-card .name { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; }
+  .case-card .meta { color: rgba(245,242,237,0.65); font-size: 0.68rem; margin-top: 0.2rem; }
+
+  .docs-col { border-right: 1px solid var(--rule); display: flex; flex-direction: column; min-height: 0; background: rgba(255,255,255,0.3); }
+  .docs-head { padding: 1rem 1.1rem 0.6rem; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+  .docs-head h3 { font-size: 1rem; }
+  .docs-head .actions { display: flex; gap: 0.3rem; }
+  .docs-head .add { background: var(--ink); color: var(--paper); border: none; padding: 0.3rem 0.7rem; border-radius: 4px; font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .docs-head button.secondary { background: white; color: var(--ink); border: 1px solid var(--rule); }
+  .docs-list { flex: 1; overflow-y: auto; padding: 0.55rem 0.6rem; }
+  .doc-row { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.5rem 0.6rem; border-radius: 4px; margin-bottom: 0.15rem; cursor: pointer; }
+  .doc-row:hover { background: var(--paper-dark); }
+  .doc-row.attached { background: var(--blue-light); border: 1px solid #c2d4f6; }
+  .doc-icon { width: 24px; height: 24px; border-radius: 4px; background: var(--paper-dark); display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; color: var(--ink); flex-shrink: 0; border: 1px solid var(--rule); }
+  .doc-name { font-size: 0.82rem; font-weight: 500; line-height: 1.25; word-break: break-word; }
+  .doc-meta { font-size: 0.7rem; color: var(--ink-muted); margin-top: 0.15rem; }
+  .doc-meta .extracted { color: var(--green); font-weight: 600; }
+  .docs-empty { padding: 2rem 1rem; text-align: center; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.6; }
+  .docs-empty .star { font-family: 'Playfair Display', serif; font-style: italic; color: var(--blue); font-size: 1.6rem; display: block; margin-bottom: 0.5rem; }
+  .docs-foot { padding: 0.6rem 0.85rem; border-top: 1px solid var(--rule); background: var(--paper); font-size: 0.72rem; color: var(--ink-muted); display: flex; justify-content: space-between; align-items: center; }
+  .docs-foot strong { color: var(--ink); }
+  .progress-bar { background: var(--paper-dark); height: 4px; border-radius: 100px; overflow: hidden; margin-top: 0.3rem; display: none; }
+  .progress-bar.active { display: block; }
+  .progress-fill { background: var(--blue); height: 100%; transition: width 0.2s; }
+
+  /* Chat */
+  .chat-col { display: flex; flex-direction: column; min-height: 0; }
+  .chat-head { padding: 0.7rem 1.4rem; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; background: var(--paper); }
+  .chat-head .title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; }
+  .chat-head .title .dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; }
+  .chat-head .folder-info { font-size: 0.72rem; color: var(--ink-muted); }
+  .chat-head .actions { display: flex; gap: 0.4rem; }
+  .chat-head button { background: white; border: 1px solid var(--rule); color: var(--ink); padding: 0.32rem 0.7rem; border-radius: 4px; font-family: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+  .chat-head button:hover { border-color: var(--ink); }
+
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1.5rem 1.4rem; display: flex; flex-direction: column; gap: 1.1rem; background: var(--paper); }
+  .msg { max-width: 760px; }
+  .msg.user { align-self: flex-end; }
+  .msg-bubble { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.user .msg-bubble { background: var(--ink); color: var(--paper); border-bottom-right-radius: 2px; }
+  .msg.ai .msg-bubble { background: white; color: var(--ink); border: 1px solid var(--rule); border-bottom-left-radius: 2px; }
+  .msg.system .msg-bubble { background: var(--gold-light); border: 1px solid #e9d8a2; color: #5a4a1e; border-radius: 5px; font-size: 0.85rem; }
+  .msg-meta { font-size: 0.7rem; color: var(--ink-muted); margin-top: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
+  .msg.user .msg-meta { justify-content: flex-end; }
+
+  /* Attached docs in composer */
+  .attachments { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.4rem 0 0; }
+  .attachment { background: var(--blue-light); color: var(--blue); border: 1px solid #c2d4f6; padding: 0.15rem 0.5rem; border-radius: 100px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+  .attachment button { background: none; border: none; color: var(--blue); cursor: pointer; padding: 0; font-size: 0.85rem; line-height: 1; }
+
+  .composer-wrap { border-top: 1px solid var(--rule); background: var(--paper); padding: 0.85rem 1.4rem 1rem; }
+  .composer { display: flex; align-items: flex-end; gap: 0.55rem; background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 0.55rem 0.6rem 0.55rem 0.9rem; transition: border-color 0.15s; }
+  .composer:focus-within { border-color: var(--ink); }
+  .composer textarea { flex: 1; resize: none; border: none; outline: none; font-family: inherit; font-size: 0.95rem; line-height: 1.5; padding: 0.4rem 0; min-height: 24px; max-height: 160px; background: transparent; }
+  .composer .send { background: var(--ink); color: var(--paper); border: none; padding: 0.5rem 1rem; border-radius: 5px; font-family: inherit; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+  .composer .send:hover { background: #000; }
+  .composer .send:disabled { background: var(--ink-muted); cursor: not-allowed; }
+  .composer-foot { margin-top: 0.45rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--ink-muted); }
+  .composer-foot strong { color: var(--ink); }
+  .typing { display: inline-block; }
+  .typing::after { content: '▍'; color: var(--ink); animation: blink 1s steps(2, start) infinite; margin-left: 1px; }
+  @keyframes blink { to { visibility: hidden; } }
+
+  #fileInput { display: none; }
+  .toast { position: fixed; bottom: 1rem; right: 1rem; background: var(--ink); color: var(--paper); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(14,14,14,0.2); z-index: 100; opacity: 0; transition: opacity 0.2s, transform 0.2s; transform: translateY(8px); max-width: 320px; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div style="display:flex; align-items:center; gap: 1.25rem;">
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <div>
+        <span class="brand-name">NoCase</span>
+        <span class="brand-chip">by Benchmark</span>
+        <span class="beta-pill">BETA</span>
+      </div>
+    </div>
+  </div>
+  <div id="folderStatus">
+    <span class="pill warn"><span class="dot"></span>No folder linked</span>
+  </div>
+</header>
+
+<!-- Onboarding -->
+<section class="onboarding" id="onboarding">
+  <div class="onboarding-card">
+    <div class="onboarding-pill"><span class="dot"></span> Local-first · your data never touches our servers</div>
+    <h1>Pick a folder for your <span class="accent">case file.</span></h1>
+    <p>Your case lives on your computer. NoCase reads and writes only inside the folder you choose. When you chat with Claude, only the snippets needed to answer the question leave your machine, and we don't keep them.</p>
+    <button class="onboarding-cta" id="pickFolderBtn">Pick a folder</button>
+    <div class="onboarding-fine">
+      Recommended: create a folder called <strong>NoCase</strong> in your Documents directory. We'll create case files inside it. You can take this folder anywhere — back it up, share it with your attorney, walk away from the service, and you still own everything.
+    </div>
+    <div class="browser-warn" id="browserWarn" style="display: none;">
+      Your browser doesn't support direct folder access. NoCase needs Chrome, Edge, Brave, or Arc. Other browsers will fall back to a session-only mode (data wiped when the tab closes).
+    </div>
+  </div>
+</section>
+
+<!-- Workspace -->
+<div class="workspace hidden" id="workspace">
+  <aside class="sidebar">
+    <h3>Workspace</h3>
+    <nav>
+      <a href="#"><span class="ic">◆</span>Overview</a>
+      <a href="#" class="active"><span class="ic">⌘</span>Chat with Claude</a>
+      <a href="#"><span class="ic">⊟</span>Documents</a>
+      <a href="#"><span class="ic">∇</span>Verdict</a>
+      <a href="#"><span class="ic">⚑</span>Objections</a>
+    </nav>
+    <div class="case-card" id="caseCard">
+      <div class="label">Case</div>
+      <div class="name italic" id="caseName">New case</div>
+      <div class="meta" id="caseMeta">Just opened · click to rename</div>
+    </div>
+  </aside>
+
+  <section class="docs-col" id="docsCol">
+    <div class="docs-head">
+      <h3>Evidence</h3>
+      <div class="actions">
+        <button class="add secondary" id="bulkAddBtn">+ Folder</button>
+        <button class="add" id="addDocBtn">+ File</button>
+      </div>
+      <input type="file" id="fileInput" multiple />
+    </div>
+    <div class="docs-list" id="docsList">
+      <div class="docs-empty">
+        <span class="star">✦</span>
+        Drop documents here or click +File / +Folder.<br>
+        Files write directly to your case folder.
+      </div>
+    </div>
+    <div class="docs-foot">
+      <div>
+        <span id="docCount">0 documents</span> · <strong>local only</strong>
+        <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width: 0%;"></div></div>
+      </div>
+      <span id="extractStatus" style="font-size: 0.68rem;"></span>
+    </div>
+  </section>
+
+  <section class="chat-col">
+    <div class="chat-head">
+      <div>
+        <div class="title"><span class="dot"></span> Claude — case assistant</div>
+        <div class="folder-info" id="folderInfo">linked: <code>—</code></div>
+      </div>
+      <div class="actions">
+        <button id="exportBtn">Export case</button>
+      </div>
+    </div>
+    <div class="chat-messages" id="msgs"></div>
+    <div class="composer-wrap">
+      <div class="attachments" id="attachments"></div>
+      <div class="composer">
+        <textarea id="composerInput" placeholder="Ask Claude about your case…  (Cmd+click documents on the left to attach)" rows="1"></textarea>
+        <button class="send" id="sendBtn">Send</button>
+      </div>
+      <div class="composer-foot">
+        <span><strong>Snippets only</strong> are sent to Claude. Full files stay on your computer.</span>
+        <span>Cmd+Enter to send</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===========================================================================
+ * NoCase Workspace v0.1 — local-first case management
+ * ---------------------------------------------------------------------------
+ * Configurable: override window.NC_CONFIG before this script runs to point
+ * at a different API base.
+ * ========================================================================= */
+
+const CONFIG = Object.assign({
+  apiBase: 'https://api.nocase.org',
+  chatPath: '/v1/chat',
+  folderHandleKey: 'noCaseFolderHandle',
+  maxExtractChars: 50000   // cap per-doc extracted text in browser memory
+}, window.NC_CONFIG || {});
+
+let folderHandle = null;
+let caseState = null;
+let chatLog = null;
+const attachedDocs = new Set();   // names of docs attached to next message
+const docTextCache = new Map();   // docName → extracted text (in-memory only)
+
+/* ---------- Browser support ---------- */
+function browserSupportsFS() {
+  return typeof window.showDirectoryPicker === 'function';
+}
+
+/* ---------- IndexedDB for handle ---------- */
+async function idbGet(key) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('nocase', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('handles');
+    open.onsuccess = () => {
+      const tx = open.result.transaction('handles', 'readonly');
+      const req = tx.objectStore('handles').get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    };
+    open.onerror = () => reject(open.error);
+  });
+}
+async function idbSet(key, value) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('nocase', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('handles');
+    open.onsuccess = () => {
+      const tx = open.result.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    };
+    open.onerror = () => reject(open.error);
+  });
+}
+
+/* ---------- File system helpers ---------- */
+async function readFileText(dirHandle, name) {
+  try {
+    const fh = await dirHandle.getFileHandle(name);
+    const file = await fh.getFile();
+    return await file.text();
+  } catch { return null; }
+}
+async function writeFileText(dirHandle, name, text) {
+  const fh = await dirHandle.getFileHandle(name, { create: true });
+  const w = await fh.createWritable();
+  await w.write(text); await w.close();
+}
+async function writeFileBlob(dirHandle, name, blob) {
+  const fh = await dirHandle.getFileHandle(name, { create: true });
+  const w = await fh.createWritable();
+  await w.write(blob); await w.close();
+}
+
+async function sha256OfBlob(blob) {
+  const buf = await blob.arrayBuffer();
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ---------- Text extraction ---------- */
+async function extractText(file) {
+  const name = file.name.toLowerCase();
+  try {
+    if (name.endsWith('.txt') || name.endsWith('.eml') || name.endsWith('.csv') || name.endsWith('.md') || name.endsWith('.json')) {
+      const text = await file.text();
+      return text.slice(0, CONFIG.maxExtractChars);
+    }
+    if (name.endsWith('.pdf') && window.pdfjsLib) {
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let text = '';
+      for (let i = 1; i <= Math.min(pdf.numPages, 50); i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it => it.str).join(' ') + '\n';
+        if (text.length >= CONFIG.maxExtractChars) break;
+      }
+      return text.slice(0, CONFIG.maxExtractChars);
+    }
+    return null; // unsupported type — DOCX, images, etc. would need more libs
+  } catch (e) {
+    console.warn('[extract] failed for', file.name, e);
+    return null;
+  }
+}
+
+/* ---------- Case state ---------- */
+function defaultCaseState() {
+  return {
+    schemaVersion: 1,
+    caseId: 'NC-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    title: 'New case',
+    documentsCount: 0
+  };
+}
+async function loadCaseState() {
+  const text = await readFileText(folderHandle, 'case.json');
+  if (!text) { caseState = defaultCaseState(); await saveCaseState(); }
+  else { caseState = JSON.parse(text); }
+}
+async function saveCaseState() {
+  caseState.updatedAt = new Date().toISOString();
+  await writeFileText(folderHandle, 'case.json', JSON.stringify(caseState, null, 2));
+  renderCaseCard();
+}
+
+/* ---------- Chat log ---------- */
+async function loadChat() {
+  const text = await readFileText(folderHandle, 'chat.json');
+  if (!text) { chatLog = { schemaVersion: 1, messages: [] }; await saveChat(); }
+  else { chatLog = JSON.parse(text); }
+  renderChat();
+}
+async function saveChat() {
+  await writeFileText(folderHandle, 'chat.json', JSON.stringify(chatLog, null, 2));
+}
+async function appendMessage(role, content, attachments=[]) {
+  chatLog.messages.push({
+    id: 'msg_' + Date.now(),
+    role, content, attachments,
+    timestamp: new Date().toISOString()
+  });
+  await saveChat();
+  renderChat();
+}
+
+/* ---------- Documents ---------- */
+async function listDocuments() {
+  const docs = [];
+  try {
+    const docsDir = await folderHandle.getDirectoryHandle('documents', { create: true });
+    for await (const [name, handle] of docsDir.entries()) {
+      if (handle.kind !== 'file') continue;
+      if (name.endsWith('.meta.json')) continue;
+      let meta = null;
+      try {
+        const sidecarText = await readFileText(docsDir, name + '.meta.json');
+        if (sidecarText) meta = JSON.parse(sidecarText);
+      } catch {}
+      const file = await handle.getFile();
+      docs.push({ name, size: file.size, type: file.type, meta, handle });
+    }
+  } catch (e) { console.warn(e); }
+  return docs.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+async function addDocuments(files) {
+  if (!files.length) return;
+  const docsDir = await folderHandle.getDirectoryHandle('documents', { create: true });
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+  const extractStatus = document.getElementById('extractStatus');
+  progressBar.classList.add('active');
+  let done = 0;
+  for (const file of files) {
+    try {
+      await writeFileBlob(docsDir, file.name, file);
+      const hash = await sha256OfBlob(file);
+      const extractedText = await extractText(file);
+      const sidecar = {
+        schemaVersion: 1,
+        filename: file.name,
+        addedAt: new Date().toISOString(),
+        sha256: hash,
+        size: file.size,
+        contentType: file.type || 'application/octet-stream',
+        extractedTextLength: extractedText ? extractedText.length : 0,
+        extractedTextPreview: extractedText ? extractedText.slice(0, 300) : null,
+        blockchainAnchor: { method: 'OpenTimestamps', txid: null, anchoredAt: null, status: 'pending' }
+      };
+      await writeFileText(docsDir, file.name + '.meta.json', JSON.stringify(sidecar, null, 2));
+      if (extractedText) docTextCache.set(file.name, extractedText);
+      done++;
+      progressFill.style.width = (100 * done / files.length) + '%';
+      extractStatus.textContent = `Importing ${done} / ${files.length}…`;
+    } catch (e) {
+      console.warn('failed to add', file.name, e);
+    }
+  }
+  caseState.documentsCount = (await listDocuments()).length;
+  await saveCaseState();
+  await renderDocs();
+  progressBar.classList.remove('active');
+  extractStatus.textContent = '';
+  showToast(`Added ${done} document${done === 1 ? '' : 's'} to your case folder`);
+}
+
+/* Bulk import a directory the user picks */
+async function importDirectory() {
+  if (!browserSupportsFS()) return;
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+    const files = [];
+    async function walk(handle, prefix='') {
+      for await (const [name, h] of handle.entries()) {
+        if (h.kind === 'file') {
+          const file = await h.getFile();
+          // Prefix nested filenames with their path so duplicates don't collide
+          if (prefix) {
+            const renamed = new File([file], prefix + file.name, { type: file.type });
+            files.push(renamed);
+          } else {
+            files.push(file);
+          }
+        } else if (h.kind === 'directory') {
+          await walk(h, prefix + name + '__');
+        }
+      }
+    }
+    await walk(dirHandle);
+    showToast(`Found ${files.length} files — importing…`);
+    await addDocuments(files);
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Import failed: ' + e.message);
+  }
+}
+
+/* ---------- Claude chat ---------- */
+async function callClaude(userMessage, attachedDocSnippets) {
+  const allDocs = (await listDocuments()).map(d => ({ name: d.name, hasText: docTextCache.has(d.name) || (d.meta?.extractedTextLength > 0) }));
+  const payload = {
+    caseTitle: caseState.title,
+    caseId: caseState.caseId,
+    documents: allDocs,
+    attachedSnippets: attachedDocSnippets,  // [{name, text}]
+    userMessage,
+    messageHistory: chatLog.messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
+  };
+  try {
+    const r = await fetch(CONFIG.apiBase + CONFIG.chatPath, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      return data.reply;
+    }
+    const errText = await r.text();
+    throw new Error(`http ${r.status}: ${errText.slice(0, 200)}`);
+  } catch (e) {
+    return fallbackResponse(userMessage, allDocs, attachedDocSnippets, e.message);
+  }
+}
+
+function fallbackResponse(userMessage, docs, attached, errMsg) {
+  const docNote = docs.length
+    ? `I can see ${docs.length} document(s) in your case folder. ${attached.length ? `You attached ${attached.length} for this question.` : 'You haven\'t attached any specific documents to this question — Cmd+click documents on the left to attach them.'}`
+    : 'You haven\'t added any documents yet — drop some into the Evidence column on the left.';
+  return `[Backend not yet deployed]\n\nYour message: "${userMessage}"\n\nWhen the nc-chat Lambda is wired up at ${CONFIG.apiBase}${CONFIG.chatPath}, this is where Claude's response would stream back. ${docNote}\n\n(${errMsg})`;
+}
+
+/* ---------- Renderers ---------- */
+function renderCaseCard() {
+  document.getElementById('caseName').textContent = caseState.title;
+  const docs = caseState.documentsCount || 0;
+  const opened = new Date(caseState.createdAt).toLocaleDateString();
+  document.getElementById('caseMeta').textContent = `${docs} document${docs === 1 ? '' : 's'} · opened ${opened}`;
+}
+
+async function renderDocs() {
+  const docs = await listDocuments();
+  const list = document.getElementById('docsList');
+  if (!docs.length) {
+    list.innerHTML = `<div class="docs-empty"><span class="star">✦</span>Drop documents here or click +File / +Folder.<br>Files write directly to your case folder.</div>`;
+    document.getElementById('docCount').textContent = '0 documents';
+    return;
+  }
+  list.innerHTML = docs.map(d => {
+    const ext = (d.name.split('.').pop() || 'file').toUpperCase().slice(0, 4);
+    const size = d.size < 1024 ? `${d.size} B` : d.size < 1024*1024 ? `${(d.size/1024).toFixed(1)} KB` : `${(d.size/1024/1024).toFixed(1)} MB`;
+    const extracted = (d.meta?.extractedTextLength || 0) > 0;
+    const isAttached = attachedDocs.has(d.name);
+    return `<div class="doc-row ${isAttached ? 'attached' : ''}" data-name="${escapeAttr(d.name)}">
+      <div class="doc-icon">${ext}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="doc-name">${escapeHtml(d.name)}</div>
+        <div class="doc-meta">${size}${extracted ? ' · <span class="extracted">text extracted</span>' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('docCount').textContent = `${docs.length} document${docs.length === 1 ? '' : 's'}`;
+  // Wire row clicks for attach/detach
+  list.querySelectorAll('.doc-row').forEach(row => {
+    row.addEventListener('click', async (e) => {
+      const name = row.dataset.name;
+      if (attachedDocs.has(name)) {
+        attachedDocs.delete(name);
+      } else {
+        attachedDocs.add(name);
+        // Lazy-load text into cache if not present
+        if (!docTextCache.has(name)) {
+          try {
+            const docsDir = await folderHandle.getDirectoryHandle('documents');
+            const fh = await docsDir.getFileHandle(name);
+            const file = await fh.getFile();
+            const text = await extractText(file);
+            if (text) docTextCache.set(name, text);
+          } catch (err) { console.warn(err); }
+        }
+      }
+      renderAttachments();
+      renderDocs();
+    });
+  });
+}
+
+function renderAttachments() {
+  const wrap = document.getElementById('attachments');
+  if (attachedDocs.size === 0) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = Array.from(attachedDocs).map(name => `
+    <span class="attachment">${escapeHtml(name)} <button data-name="${escapeAttr(name)}">×</button></span>
+  `).join('');
+  wrap.querySelectorAll('button').forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    attachedDocs.delete(b.dataset.name);
+    renderAttachments();
+    renderDocs();
+  }));
+}
+
+function renderChat() {
+  const wrap = document.getElementById('msgs');
+  if (!chatLog.messages.length) {
+    wrap.innerHTML = `
+      <div class="msg ai">
+        <div class="msg-bubble">I'm Claude. Tell me about the case — what happened, who's involved, what outcome you're working toward. As you add documents to your case folder I'll factor them in. Click any document on the left to attach it directly to a question. Your full files stay on your computer; I only see snippets you choose to share.</div>
+        <div class="msg-meta">✦ Claude · just now</div>
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = chatLog.messages.map(m => {
+    const role = m.role === 'user' ? 'user' : (m.role === 'system' ? 'system' : 'ai');
+    const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const who = role === 'ai' ? '✦ Claude · ' : '';
+    const att = m.attachments && m.attachments.length ? `<div style="font-size:0.7rem; opacity:0.7; margin-top:0.25rem;">📎 ${m.attachments.join(', ')}</div>` : '';
+    return `<div class="msg ${role}"><div class="msg-bubble">${escapeHtml(m.content)}</div>${att}<div class="msg-meta">${who}${time}</div></div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+
+/* ---------- Folder lifecycle ---------- */
+async function pickFolder() {
+  if (!browserSupportsFS()) {
+    document.getElementById('browserWarn').style.display = 'block';
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    folderHandle = handle;
+    await idbSet(CONFIG.folderHandleKey, handle);
+    await initWorkspace();
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Could not access folder: ' + e.message);
+  }
+}
+
+async function tryRestoreFolder() {
+  const handle = await idbGet(CONFIG.folderHandleKey);
+  if (!handle) return false;
+  const opts = { mode: 'readwrite' };
+  let perm = await handle.queryPermission(opts);
+  if (perm === 'granted') {
+    folderHandle = handle;
+    await initWorkspace();
+    return true;
+  }
+  // Need a user gesture to request — show a small button on onboarding
+  const btn = document.getElementById('pickFolderBtn');
+  btn.textContent = `Reconnect to ${handle.name}`;
+  btn.dataset.restore = '1';
+  return false;
+}
+
+async function initWorkspace() {
+  await loadCaseState();
+  await loadChat();
+  await renderDocs();
+  renderAttachments();
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById('workspace').classList.remove('hidden');
+  document.getElementById('folderStatus').innerHTML = `<span class="pill ok"><span class="dot"></span>Folder linked · ${folderHandle.name}</span>`;
+  document.getElementById('folderInfo').innerHTML = `linked: <code>${escapeHtml(folderHandle.name)}/</code>`;
+}
+
+/* ---------- Wire UI ---------- */
+document.getElementById('pickFolderBtn').addEventListener('click', async () => {
+  if (document.getElementById('pickFolderBtn').dataset.restore) {
+    // Re-request perm on the existing handle
+    const handle = await idbGet(CONFIG.folderHandleKey);
+    if (handle) {
+      const perm = await handle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') { folderHandle = handle; await initWorkspace(); return; }
+    }
+  }
+  pickFolder();
+});
+
+document.getElementById('addDocBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  await addDocuments(Array.from(e.target.files));
+  e.target.value = '';
+});
+document.getElementById('bulkAddBtn').addEventListener('click', importDirectory);
+
+const docsCol = document.getElementById('docsCol');
+['dragenter','dragover'].forEach(ev => docsCol.addEventListener(ev, e => { e.preventDefault(); docsCol.style.background = 'var(--blue-light)'; }));
+['dragleave','drop'].forEach(ev => docsCol.addEventListener(ev, e => { e.preventDefault(); docsCol.style.background = ''; }));
+docsCol.addEventListener('drop', async (e) => {
+  if (!folderHandle) return;
+  await addDocuments(Array.from(e.dataTransfer.files));
+});
+
+const sendBtn = document.getElementById('sendBtn');
+const composerInput = document.getElementById('composerInput');
+async function sendMessage() {
+  const text = composerInput.value.trim();
+  if (!text || !folderHandle) return;
+  const attachedNames = Array.from(attachedDocs);
+  const attachedSnippets = attachedNames.map(name => ({
+    name,
+    text: docTextCache.get(name) || '[no extractable text]'
+  }));
+  composerInput.value = '';
+  await appendMessage('user', text, attachedNames);
+  attachedDocs.clear();
+  renderAttachments();
+  renderDocs();
+  sendBtn.disabled = true;
+  // Show a typing indicator
+  const wrap = document.getElementById('msgs');
+  const stub = document.createElement('div');
+  stub.className = 'msg ai';
+  stub.innerHTML = `<div class="msg-bubble"><span class="typing"></span></div><div class="msg-meta">✦ Claude · …</div>`;
+  wrap.appendChild(stub);
+  wrap.scrollTop = wrap.scrollHeight;
+  let reply;
+  try { reply = await callClaude(text, attachedSnippets); }
+  catch (e) { reply = '[error] ' + e.message; }
+  stub.remove();
+  await appendMessage('assistant', reply);
+  sendBtn.disabled = false;
+  composerInput.focus();
+}
+sendBtn.addEventListener('click', sendMessage);
+composerInput.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+});
+composerInput.addEventListener('input', () => {
+  composerInput.style.height = 'auto';
+  composerInput.style.height = Math.min(composerInput.scrollHeight, 160) + 'px';
+});
+
+document.getElementById('caseCard').addEventListener('click', async () => {
+  const title = prompt('Case name:', caseState.title);
+  if (title && title.trim()) { caseState.title = title.trim(); await saveCaseState(); }
+});
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const docs = await listDocuments();
+  const bundle = {
+    case: caseState,
+    chat: chatLog,
+    documents: docs.map(d => ({ name: d.name, size: d.size, hash: d.meta?.sha256 })),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${caseState.caseId}-export.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Exported case as JSON');
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ---------- Boot ---------- */
+(async () => {
+  if (!browserSupportsFS()) {
+    document.getElementById('browserWarn').style.display = 'block';
+    return;
+  }
+  await tryRestoreFolder();
+})();
+</script>
+</body>
+</html>
