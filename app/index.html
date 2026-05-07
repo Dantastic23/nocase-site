@@ -12,6 +12,8 @@
 <script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <!-- mammoth.js for in-browser DOCX text extraction -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- Tesseract.js for OCR on image-based PDFs (loads worker on first use) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
 <style>
   :root {
     --ink: #0e0e0e; --ink-soft: #3a3a3a; --ink-muted: #7a7a7a;
@@ -318,6 +320,41 @@ async function sha256OfBlob(blob) {
 }
 
 /* ---------- Text extraction ---------- */
+let _ocrWorker = null;
+async function getOcrWorker() {
+  if (_ocrWorker) return _ocrWorker;
+  if (!window.Tesseract) return null;
+  // Tesseract v5: createWorker is async and accepts language code directly
+  _ocrWorker = await window.Tesseract.createWorker('eng');
+  return _ocrWorker;
+}
+async function ocrPdf(pdf, name) {
+  const worker = await getOcrWorker();
+  if (!worker) return null;
+  const maxPages = Math.min(pdf.numPages, 30); // cap for performance
+  const status = document.getElementById('extractStatus');
+  let allText = '';
+  for (let i = 1; i <= maxPages; i++) {
+    if (status) status.textContent = `OCR ${name.slice(0, 20)}… page ${i}/${maxPages}`;
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    try {
+      const result = await worker.recognize(canvas);
+      allText += (result?.data?.text || '') + '\n\n';
+    } catch (err) {
+      console.warn('[ocr] page', i, 'failed', err);
+    }
+    if (allText.length >= CONFIG.maxExtractChars) break;
+  }
+  if (status) status.textContent = '';
+  return allText;
+}
+
 async function extractText(file) {
   const name = file.name.toLowerCase();
   try {
@@ -334,6 +371,14 @@ async function extractText(file) {
         const content = await page.getTextContent();
         text += content.items.map(it => it.str).join(' ') + '\n';
         if (text.length >= CONFIG.maxExtractChars) break;
+      }
+      // If the PDF has no real text layer (scan / image-based), fall back to OCR
+      if (text.replace(/\s+/g, '').length < 50 && window.Tesseract) {
+        console.log('[extract] no text layer in', name, '— running OCR');
+        const ocrText = await ocrPdf(pdf, name);
+        if (ocrText && ocrText.trim().length > text.trim().length) {
+          return ocrText.slice(0, CONFIG.maxExtractChars);
+        }
       }
       return text.slice(0, CONFIG.maxExtractChars);
     }
