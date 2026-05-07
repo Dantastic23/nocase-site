@@ -258,8 +258,9 @@ const CONFIG = Object.assign({
 let folderHandle = null;
 let caseState = null;
 let chatLog = null;
-const attachedDocs = new Set();   // names of docs attached to next message
-const docTextCache = new Map();   // docName → extracted text (in-memory only)
+const attachedDocs = new Set();        // names of docs attached to NEXT message
+const conversationDocs = new Set();    // names attached at ANY point this session — kept for context
+const docTextCache = new Map();        // docName → extracted text (in-memory only)
 
 /* ---------- Browser support ---------- */
 function browserSupportsFS() {
@@ -731,13 +732,31 @@ const composerInput = document.getElementById('composerInput');
 async function sendMessage() {
   const text = composerInput.value.trim();
   if (!text || !folderHandle) return;
-  const attachedNames = Array.from(attachedDocs);
-  const attachedSnippets = attachedNames.map(name => ({
-    name,
-    text: docTextCache.get(name) || '[no extractable text]'
-  }));
+  // Track newly-attached docs as part of the conversation's running context
+  const newlyAttached = Array.from(attachedDocs);
+  newlyAttached.forEach(name => conversationDocs.add(name));
+
+  // Build the snippet list from EVERY doc shared in this conversation so far,
+  // capped at MAX_CONTEXT_BUDGET chars (most recent doc first).
+  const MAX_CONTEXT_BUDGET = 100000;
+  const namesByRecency = [
+    ...newlyAttached,                                  // attached to this turn first
+    ...Array.from(conversationDocs).filter(n => !newlyAttached.includes(n))
+  ];
+  let used = 0;
+  const attachedSnippets = [];
+  for (const name of namesByRecency) {
+    const t = docTextCache.get(name);
+    if (!t) continue;
+    const remaining = MAX_CONTEXT_BUDGET - used;
+    if (remaining <= 0) break;
+    const slice = t.slice(0, remaining);
+    attachedSnippets.push({ name, text: slice });
+    used += slice.length;
+  }
+
   composerInput.value = '';
-  await appendMessage('user', text, attachedNames);
+  await appendMessage('user', text, newlyAttached);
   attachedDocs.clear();
   renderAttachments();
   renderDocs();
