@@ -10,6 +10,8 @@
 <!-- PDF.js for in-browser PDF text extraction -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<!-- mammoth.js for in-browser DOCX text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root {
     --ink: #0e0e0e; --ink-soft: #3a3a3a; --ink-muted: #7a7a7a;
@@ -245,7 +247,7 @@
  * ========================================================================= */
 
 const CONFIG = Object.assign({
-  apiBase: 'https://5zx7bsqkoavfgjbczf6iqzkd5a0xvody.lambda-url.us-east-1.on.aws',
+  apiBase: 'https://api.nocase.org',
   chatPath: '/v1/chat',
   folderHandleKey: 'noCaseFolderHandle',
   maxExtractChars: 50000   // cap per-doc extracted text in browser memory
@@ -335,7 +337,12 @@ async function extractText(file) {
       }
       return text.slice(0, CONFIG.maxExtractChars);
     }
-    return null; // unsupported type — DOCX, images, etc. would need more libs
+    if (name.endsWith('.docx') && window.mammoth) {
+      const buf = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+      return (result.value || '').slice(0, CONFIG.maxExtractChars);
+    }
+    return null; // unsupported type — old .doc, images need OCR, etc.
   } catch (e) {
     console.warn('[extract] failed for', file.name, e);
     return null;
