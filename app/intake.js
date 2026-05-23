@@ -57,6 +57,72 @@
   // EVIDENCE MAPS — what each case type needs
   // ============================================================================
 
+  // ============================================================================
+  // OS / CLIENT DETECTION
+  // ============================================================================
+
+  function detectOS() {
+    const ua = navigator.userAgent;
+    const plat = navigator.platform || '';
+    if (/Mac/i.test(plat) || /Mac OS X/i.test(ua)) return 'mac';
+    if (/Win/i.test(plat) || /Windows/i.test(ua)) return 'win';
+    if (/Linux/i.test(plat) || /Linux/i.test(ua)) return 'linux';
+    return 'other';
+  }
+
+  // Provider instruction templates — keyed by provider id
+  function providerInstruction(id) {
+    const tpl = {
+      'apple-mail': {
+        title: 'Apple Mail on macOS',
+        body: 'I can scan your local Mail directly. Click the button, point at <code>~/Library/Mail</code> (you may need to show hidden folders with Cmd+Shift+.), and I\'ll save matching .eml files into your case folder.',
+        action: 'Pick Mail folder and scan',
+        auto: true
+      },
+      'gmail': {
+        title: 'Gmail (web)',
+        body: 'Gmail web doesn\'t have local files. Export via Google Takeout:<ol><li>Open <a href="https://takeout.google.com" target="_blank">takeout.google.com</a></li><li>Deselect All, then check only Mail</li><li>Choose .mbox format, export</li><li>Google emails you when the archive is ready (can take minutes to hours)</li><li>Download the .mbox file</li><li>Drag the .mbox into the drop zone below</li></ol>',
+        action: null
+      },
+      'outlook': {
+        title: 'Outlook',
+        body: 'Export from Outlook:<ol><li>File → Open &amp; Export → Import/Export</li><li>Export to a file → Next</li><li>Outlook Data File (.pst) → Next</li><li>Pick the folder containing case emails</li><li>Save the .pst file</li><li>Drag the .pst into the drop zone below</li></ol>',
+        action: null
+      },
+      'other-email': {
+        title: 'Other email client',
+        body: 'Drag any email export file (.eml, .mbox, .pst, .msg) into the drop zone at the bottom of this page.',
+        action: null
+      },
+      'imessage': {
+        title: 'iMessage on Mac / iPhone',
+        body: 'macOS blocks browsers from reading the iMessage database directly. Two paths:<ol><li><strong>Per-thread (easy)</strong>: open Messages.app, find the conversation, File → Print → Save as PDF → drop the PDF into the drop zone below.</li><li><strong>Full database (technical)</strong>: install <code>imessage-exporter</code> (Mac terminal tool), export to JSON or HTML, drop the result.</li></ol>',
+        action: null
+      },
+      'whatsapp': {
+        title: 'WhatsApp',
+        body: 'On your phone: open the relevant chat → ⋮ menu → More → Export Chat → Without Media → email it to yourself or save to Files → download to your computer → drop the .zip or .txt here.',
+        action: null
+      },
+      'signal': {
+        title: 'Signal',
+        body: 'Signal doesn\'t export individual chats easily. Best paths:<ol><li>Screenshot the key messages, save as image files, drop them here.</li><li>Signal Desktop → File → Create signal backup → drop the .bak (only useful if you have a Signal-compatible reader).</li></ol>',
+        action: null
+      },
+      'sms': {
+        title: 'SMS (Android)',
+        body: 'Install <strong>SMS Backup &amp; Restore</strong> from the Play Store → back up SMS to XML or JSON → transfer the file to your computer → drop here.',
+        action: null
+      },
+      'other-text': {
+        title: 'Other messaging app',
+        body: 'If your app has an export feature, run it and drop the result in the drop zone below. Otherwise screenshot the relevant conversations and drop the images.',
+        action: null
+      }
+    };
+    return tpl[id];
+  }
+
   const EVIDENCE_MAPS = {
     contract_dispute: [
       { key: 'spine_contract', label: 'The signed contract / note', match: /contract|agreement|note|loan/i, required: true },
@@ -147,6 +213,31 @@
     .nci-row-doc:hover .nci-radio-circle { border-color: var(--blue); }
     .nci-radio-circle.checked { border-color: var(--blue); background: var(--blue); }
     .nci-radio-circle.checked::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 7px; height: 7px; background: white; border-radius: 50%; }
+    .nci-section-card { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; }
+    .nci-section-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1rem; margin-bottom: 0.45rem; color: var(--ink); display: flex; align-items: center; gap: 0.4rem; }
+    .nci-section-sub { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 0.7rem; line-height: 1.5; }
+    .nci-folder-status { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.75rem; background: var(--green-light); border: 1px solid #c4e6d3; border-radius: 6px; font-size: 0.85rem; color: var(--ink); margin-bottom: 0.7rem; }
+    .nci-protections { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.85rem; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; padding: 0.65rem 0.8rem; background: var(--paper-dark); border-radius: 5px; margin-top: 0.55rem; }
+    .nci-protections strong { color: var(--ink); }
+    .nci-provider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem; margin-bottom: 0.7rem; }
+    .nci-provider-card { background: white; border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.7rem; cursor: pointer; text-align: left; font-family: inherit; transition: border-color 0.15s, background 0.15s; display: flex; flex-direction: column; gap: 0.15rem; }
+    .nci-provider-card:hover { border-color: var(--blue); background: rgba(26,79,214,0.04); }
+    .nci-provider-card.selected { border: 1.5px solid var(--blue); background: var(--blue-light); }
+    .nci-provider-card strong { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .nci-provider-card span { font-size: 0.72rem; color: var(--ink-muted); }
+    .nci-instruction-card { background: var(--paper-dark); border: 1px solid var(--rule); border-radius: 6px; padding: 0.8rem 0.95rem; margin-top: 0.5rem; font-size: 0.82rem; line-height: 1.55; }
+    .nci-instruction-card strong { color: var(--ink); }
+    .nci-instruction-card ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+    .nci-instruction-card ol li { margin: 0.2rem 0; }
+    .nci-instruction-card code { font-family: 'SF Mono', monospace; font-size: 0.78rem; background: white; padding: 0.05rem 0.3rem; border-radius: 3px; border: 1px solid var(--rule); }
+    .nci-instruction-card a { color: var(--blue); }
+    .nci-drop-zone { border: 2px dashed var(--rule); border-radius: 8px; padding: 1.3rem 1rem; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; flex-direction: column; gap: 0.25rem; align-items: center; background: white; }
+    .nci-drop-zone:hover, .nci-drop-zone.drag-over { border-color: var(--blue); background: var(--blue-light); }
+    .nci-drop-zone strong { font-size: 0.9rem; color: var(--ink); }
+    .nci-drop-zone span { font-size: 0.78rem; color: var(--ink-muted); }
+    .nci-import-result { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.55rem; padding: 0.5rem 0.7rem; background: var(--paper-dark); border-radius: 5px; }
+    .nci-import-result.ok { background: var(--green-light); color: var(--green); }
+    .nci-import-result.err { background: var(--red-light); color: var(--red); }
     .nci-row-doc-icon { width: 32px; height: 32px; background: var(--paper-dark); border-radius: 5px; display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; border: 1px solid var(--rule); }
     .nci-row-doc-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); }
     .nci-row-doc-meta { font-size: 0.74rem; color: var(--ink-muted); margin-top: 0.15rem; }
@@ -324,7 +415,112 @@
     `;
   }
 
-  function renderStep2(docs) {
+  // ============================================================================
+  // STEP 2 — Folder + protections + OS-aware import
+  // ============================================================================
+
+  function renderStep2() {
+    const os = detectOS();
+    const fh = window.__nci_folderHandle;
+    const folderName = fh?.name || null;
+
+    return `
+      <div class="nci-label">Step 2 — Your case folder</div>
+      <h3 class="nci-h">Set up the folder, then gather everything into it</h3>
+      <p class="nci-p">Everything about this matter lives here. Pick or create the folder, learn what's protected, then walk through getting your emails, texts, and documents in. You only do this once.</p>
+
+      <div class="nci-section-card">
+        <div class="nci-section-title">1. Pick or create your case folder</div>
+        ${folderName
+          ? `<div class="nci-folder-status">
+              <span><i class="ti ti-folder" aria-hidden="true"></i> Linked: <strong>${escapeHtml(folderName)}</strong></span>
+              <button class="nci-btn" id="nci-change-folder">Change folder</button>
+            </div>`
+          : `<button class="nci-btn primary" id="nci-pick-folder">Pick or create a folder</button>
+             <p class="nci-section-sub" style="margin: 0.55rem 0 0;">The OS dialog has a "New Folder" button — use it if you don't have a case folder yet. We recommend creating <code>~/Documents/NoCase/&lt;case name&gt;</code>.</p>`
+        }
+        <div class="nci-protections">
+          <div><strong>Files stay local.</strong> Nothing uploads unless you choose to attach something to a Claude turn.</div>
+          <div><strong>Snippets only leave.</strong> The chat sends short excerpts, not whole files.</div>
+          <div><strong>SHA-256 stamped.</strong> Every file gets a hash so the chain of custody is provable.</div>
+          <div><strong>Delete = gone.</strong> Wipe the folder and the case is gone — we have nothing.</div>
+        </div>
+      </div>
+
+      <div class="nci-section-card">
+        <div class="nci-section-title">2. Import your emails about this matter</div>
+        <p class="nci-section-sub">Pick how you read email. Each option shows what to do.${os === 'mac' ? ' Apple Mail can be scanned in-place; others need an export first.' : ''}</p>
+        <div class="nci-provider-grid">
+          ${os === 'mac' ? `
+            <button class="nci-provider-card" data-nci-email="apple-mail">
+              <strong>Apple Mail</strong>
+              <span>Auto-scan ~/Library/Mail</span>
+            </button>` : ''}
+          <button class="nci-provider-card" data-nci-email="gmail">
+            <strong>Gmail (web)</strong>
+            <span>Google Takeout, then drop</span>
+          </button>
+          <button class="nci-provider-card" data-nci-email="outlook">
+            <strong>Outlook</strong>
+            <span>Export PST, then drop</span>
+          </button>
+          <button class="nci-provider-card" data-nci-email="other-email">
+            <strong>Other / multiple</strong>
+            <span>Drag and drop</span>
+          </button>
+        </div>
+        <div id="nci-email-instructions"></div>
+      </div>
+
+      <div class="nci-section-card">
+        <div class="nci-section-title">3. Import your texts about this matter</div>
+        <p class="nci-section-sub">Same idea for messaging apps.</p>
+        <div class="nci-provider-grid">
+          ${os === 'mac' ? `
+            <button class="nci-provider-card" data-nci-text="imessage">
+              <strong>iMessage</strong>
+              <span>Mac / iPhone — PDF export</span>
+            </button>` : ''}
+          <button class="nci-provider-card" data-nci-text="whatsapp">
+            <strong>WhatsApp</strong>
+            <span>Export Chat → drop</span>
+          </button>
+          <button class="nci-provider-card" data-nci-text="signal">
+            <strong>Signal</strong>
+            <span>Screenshots or backup</span>
+          </button>
+          <button class="nci-provider-card" data-nci-text="sms">
+            <strong>SMS (Android)</strong>
+            <span>SMS Backup &amp; Restore</span>
+          </button>
+          <button class="nci-provider-card" data-nci-text="other-text">
+            <strong>Other / multiple</strong>
+            <span>Drag and drop</span>
+          </button>
+        </div>
+        <div id="nci-text-instructions"></div>
+      </div>
+
+      <div class="nci-section-card">
+        <div class="nci-section-title">4. Drop everything else here</div>
+        <p class="nci-section-sub">Contracts, photos, PDFs, scans, exports from any of the steps above — anything goes here. All files write straight to your case folder's <code>documents/</code> subdirectory.</p>
+        <div class="nci-drop-zone" id="nci-loose-drop">
+          <strong>Drop files here</strong>
+          <span>or click to pick from Finder</span>
+          <input type="file" id="nci-loose-input" multiple style="display: none;" />
+        </div>
+        <div id="nci-loose-result"></div>
+      </div>
+
+      <p class="nci-section-sub" style="margin-top: 0.5rem; text-align: center;">When the folder has what you need, hit Continue. The next step is picking the spine document — the single document this case revolves around.</p>
+    `;
+  }
+
+  // ============================================================================
+  // STEP 3 — Spine document (was Step 2)
+  // ============================================================================
+
+  function renderStep3Spine(docs) {
     // Find the best-recommended spine across the WHOLE folder, not just the first doc.
     // Priority: filenames mentioning "note" or "contract" or "agreement" win.
     const recommendedName = (() => {
@@ -384,7 +580,11 @@
     `;
   }
 
-  function renderStep3(docs) {
+  // ============================================================================
+  // STEP 4 — Evidence checklist (was Step 3)
+  // ============================================================================
+
+  function renderStep4Evidence(docs) {
     const caseType = state.data.step1?.caseType || 'unknown';
     const map = EVIDENCE_MAPS[caseType] || EVIDENCE_MAPS.unknown;
 
@@ -440,41 +640,8 @@
     `;
   }
 
-  function renderStep4() {
-    return `
-      <div class="nci-label">Step 4 — Import helper</div>
-      <h3 class="nci-h">Pull communications into your case folder</h3>
-      <p class="nci-p">The case folder is the brain. If your emails and texts about this matter live elsewhere, they should be here. This step gathers them from Mail and Messages and writes them into <code>documents/</code> so the rest of the workspace can see them.</p>
-
-      <div class="nci-claude">
-        <div class="nci-claude-label">How this works</div>
-        Click <strong>Pick Mail folder</strong>, point at <code>~/Library/Mail</code> (or wherever your client stores its mailboxes), and I'll scan all <code>.emlx</code> files for matches against the keywords below. Each matching message gets saved as a <code>.eml</code> file inside your case's <code>documents/</code> folder, with a SHA-256 captured so the chain of custody is provable.
-      </div>
-
-      <div class="nci-row">
-        <div class="nci-label">Scan rules</div>
-        <div style="border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem 0.85rem; background: white; font-size: 0.85rem; line-height: 1.65;">
-          <div><strong>Across:</strong> <span class="nci-chip">Mail (all accounts)</span></div>
-          <div style="margin-top: 0.3rem;"><strong>Match if subject or body contains:</strong></div>
-          <div style="margin-top: 0.2rem;" id="nci-keywords-display"></div>
-          <div style="margin-top: 0.5rem;">
-            <input class="nci-input" id="nci-keyword-add" type="text" placeholder="Add a keyword and press Enter" style="font-size: 0.82rem;" />
-          </div>
-        </div>
-      </div>
-
-      <div class="nci-row" style="display: flex; gap: 0.5rem;">
-        <button class="nci-btn primary" id="nci-pick-mail">Pick Mail folder</button>
-        <button class="nci-btn" id="nci-skip-import">Skip for now</button>
-      </div>
-
-      <div id="nci-import-result" style="display: none;"></div>
-
-      <div class="nci-note">
-        <strong>Privacy:</strong> the scan runs entirely in your browser via File System Access. No email content leaves your machine. Only the matched messages get copied into your case folder.
-      </div>
-    `;
-  }
+  // Old standalone Step 4 (mail import helper) is removed — its function now lives
+  // inside the new Step 2 (folder + protections + OS-aware import).
 
   function renderStep5() {
     const redLines = state.data.redLines.length
@@ -542,8 +709,13 @@
         };
       }));
     } else if (state.step === 2) {
+      // Step 2 — Folder + protections + OS-aware import
+      body.innerHTML = renderStep2();
+      wireStep2();
+    } else if (state.step === 3) {
+      // Step 3 — Spine document picker (was Step 2 before redesign)
       const docs = await loadDocs();
-      body.innerHTML = renderStep2(docs);
+      body.innerHTML = renderStep3Spine(docs);
       body.querySelectorAll('[data-nci-spine]').forEach(row => {
         row.addEventListener('click', () => {
           const name = row.dataset.nciSpine;
@@ -564,27 +736,12 @@
           await renderCurrentStep();
         });
       }
-    } else if (state.step === 3) {
-      const docs = await loadDocs();
-      body.innerHTML = renderStep3(docs);
-      body.querySelectorAll('[data-nci-import]').forEach(btn => {
-        btn.addEventListener('click', () => { state.step = 4; renderStepper(); renderCurrentStep(); });
-      });
     } else if (state.step === 4) {
-      body.innerHTML = renderStep4();
-      renderKeywords();
-      const addInput = document.getElementById('nci-keyword-add');
-      addInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-          state.data.importKeywords = state.data.importKeywords || defaultKeywords();
-          state.data.importKeywords.push(e.target.value.trim());
-          e.target.value = '';
-          renderKeywords();
-        }
-      });
-      document.getElementById('nci-pick-mail')?.addEventListener('click', pickMailFolder);
-      document.getElementById('nci-skip-import')?.addEventListener('click', () => {
-        state.step = 5; renderStepper(); renderCurrentStep();
+      // Step 4 — Evidence checklist (was Step 3 before redesign)
+      const docs = await loadDocs();
+      body.innerHTML = renderStep4Evidence(docs);
+      body.querySelectorAll('[data-nci-import]').forEach(btn => {
+        btn.addEventListener('click', () => { state.step = 2; renderStepper(); renderCurrentStep(); });
       });
     } else if (state.step === 5) {
       body.innerHTML = renderStep5();
@@ -668,6 +825,165 @@
       }
       return docs.sort((a, b) => a.name.localeCompare(b.name));
     } catch { return []; }
+  }
+
+  // ============================================================================
+  // STEP 2 WIRING — folder pick + provider clicks + drop zone
+  // ============================================================================
+
+  function wireStep2() {
+    // Folder pick / change — opens the OS directory picker
+    const pickBtn = document.getElementById('nci-pick-folder');
+    const changeBtn = document.getElementById('nci-change-folder');
+    const onPick = async () => {
+      if (typeof window.showDirectoryPicker !== 'function') {
+        alert('Your browser doesn\'t support folder access. Use Chrome, Edge, Brave, or Arc.');
+        return;
+      }
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+        window.__nci_folderHandle = handle;
+        // Persist to the host's IndexedDB if available
+        if (typeof window.idbSet === 'function') {
+          try { await window.idbSet('noCaseFolderHandle', handle); } catch {}
+        }
+        renderCurrentStep();
+      } catch (e) {
+        if (e.name !== 'AbortError') alert('Could not access folder: ' + e.message);
+      }
+    };
+    if (pickBtn) pickBtn.addEventListener('click', onPick);
+    if (changeBtn) changeBtn.addEventListener('click', onPick);
+
+    // Email + text provider picker
+    document.querySelectorAll('[data-nci-email]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-nci-email]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        renderProviderInstruction(btn.dataset.nciEmail, 'nci-email-instructions');
+      });
+    });
+    document.querySelectorAll('[data-nci-text]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-nci-text]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        renderProviderInstruction(btn.dataset.nciText, 'nci-text-instructions');
+      });
+    });
+
+    // Loose-doc drop zone
+    const dropZone = document.getElementById('nci-loose-drop');
+    const dropInput = document.getElementById('nci-loose-input');
+    const dropResult = document.getElementById('nci-loose-result');
+    if (dropZone && dropInput) {
+      dropZone.addEventListener('click', () => dropInput.click());
+      dropInput.addEventListener('change', async (e) => {
+        await ingestLooseFiles(Array.from(e.target.files || []), dropResult);
+        e.target.value = '';
+      });
+      ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+        e.preventDefault(); dropZone.classList.add('drag-over');
+      }));
+      ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+        e.preventDefault(); dropZone.classList.remove('drag-over');
+      }));
+      dropZone.addEventListener('drop', async (e) => {
+        await ingestLooseFiles(Array.from(e.dataTransfer.files || []), dropResult);
+      });
+    }
+  }
+
+  function renderProviderInstruction(providerId, containerId) {
+    const tpl = providerInstruction(providerId);
+    const container = document.getElementById(containerId);
+    if (!tpl || !container) return;
+    let actionHtml = '';
+    if (tpl.auto && providerId === 'apple-mail') {
+      actionHtml = `
+        <div style="margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px dashed var(--rule);">
+          <div class="nci-label" style="margin-bottom: 0.3rem;">Keywords I'll search for</div>
+          <div id="nci-keywords-display" style="margin-bottom: 0.5rem;"></div>
+          <input class="nci-input" id="nci-keyword-add" type="text" placeholder="Add a keyword and press Enter" style="font-size: 0.8rem; margin-bottom: 0.5rem;" />
+          <button class="nci-btn primary" id="nci-pick-mail">${escapeHtml(tpl.action)}</button>
+          <div id="nci-import-result" class="nci-import-result" style="display: none;"></div>
+        </div>
+      `;
+    }
+    container.innerHTML = `
+      <div class="nci-instruction-card">
+        <strong>${escapeHtml(tpl.title)}</strong>
+        <div style="margin-top: 0.3rem;">${tpl.body}</div>
+        ${actionHtml}
+      </div>
+    `;
+    // If apple-mail, wire the auto-scan
+    if (tpl.auto && providerId === 'apple-mail') {
+      renderKeywords();
+      document.getElementById('nci-keyword-add')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+          state.data.importKeywords = state.data.importKeywords || defaultKeywords();
+          state.data.importKeywords.push(e.target.value.trim());
+          e.target.value = '';
+          renderKeywords();
+        }
+      });
+      document.getElementById('nci-pick-mail')?.addEventListener('click', pickMailFolder);
+    }
+  }
+
+  async function ingestLooseFiles(files, resultEl) {
+    if (!files.length) return;
+    const fh = window.__nci_folderHandle;
+    if (!fh) {
+      if (resultEl) {
+        resultEl.style.display = 'block';
+        resultEl.className = 'nci-import-result err';
+        resultEl.textContent = 'Pick a case folder first (section 1 above).';
+      }
+      return;
+    }
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.className = 'nci-import-result';
+      resultEl.textContent = 'Writing ' + files.length + ' file' + (files.length === 1 ? '' : 's') + '…';
+    }
+    let saved = 0;
+    try {
+      const docsDir = await fh.getDirectoryHandle('documents', { create: true });
+      for (const file of files) {
+        try {
+          const out = await docsDir.getFileHandle(file.name, { create: true });
+          const w = await out.createWritable();
+          await w.write(file);
+          await w.close();
+          // Minimal meta sidecar so the workspace picks them up
+          try {
+            const buf = await file.arrayBuffer();
+            const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+            const sha256 = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const meta = {
+              schemaVersion: 1, filename: file.name, addedAt: new Date().toISOString(),
+              sha256, size: file.size, contentType: file.type || 'application/octet-stream',
+              source: 'intake-loose-drop'
+            };
+            const metaH = await docsDir.getFileHandle(file.name + '.meta.json', { create: true });
+            const mw = await metaH.createWritable();
+            await mw.write(JSON.stringify(meta, null, 2));
+            await mw.close();
+          } catch {}
+          saved++;
+        } catch (e) { console.warn('failed to save', file.name, e); }
+      }
+      if (resultEl) {
+        resultEl.className = 'nci-import-result ok';
+        resultEl.textContent = 'Saved ' + saved + ' file' + (saved === 1 ? '' : 's') + ' into your case folder';
+      }
+    } catch (e) {
+      if (resultEl) {
+        resultEl.className = 'nci-import-result err';
+        resultEl.textContent = 'Save failed: ' + e.message;
+      }
+    }
   }
 
   async function uploadSpineDoc(file) {
