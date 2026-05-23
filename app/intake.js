@@ -140,9 +140,13 @@
     .nci-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
     .nci-textarea { width: 100%; min-height: 80px; padding: 0.65rem 0.8rem; border: 1px solid var(--rule); border-radius: 6px; font-family: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical; background: white; color: var(--ink); }
     .nci-input { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--rule); border-radius: 6px; font-family: inherit; font-size: 0.9rem; background: white; color: var(--ink); }
-    .nci-row-doc { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.65rem 0.85rem; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 0.45rem; cursor: pointer; background: white; transition: border-color 0.15s, background 0.15s; }
-    .nci-row-doc:hover { border-color: var(--ink-muted); }
+    .nci-row-doc { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.85rem; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 0.45rem; cursor: pointer; background: white; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
+    .nci-row-doc:hover { border-color: var(--blue); background: rgba(26,79,214,0.04); box-shadow: 0 1px 4px rgba(26,79,214,0.08); }
     .nci-row-doc.selected { border: 1.5px solid var(--blue); background: var(--blue-light); }
+    .nci-radio-circle { width: 18px; height: 18px; border: 1.5px solid var(--ink-muted); border-radius: 50%; flex-shrink: 0; background: white; position: relative; transition: border-color 0.15s, background 0.15s; }
+    .nci-row-doc:hover .nci-radio-circle { border-color: var(--blue); }
+    .nci-radio-circle.checked { border-color: var(--blue); background: var(--blue); }
+    .nci-radio-circle.checked::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 7px; height: 7px; background: white; border-radius: 50%; }
     .nci-row-doc-icon { width: 32px; height: 32px; background: var(--paper-dark); border-radius: 5px; display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; border: 1px solid var(--rule); }
     .nci-row-doc-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); }
     .nci-row-doc-meta { font-size: 0.74rem; color: var(--ink-muted); margin-top: 0.15rem; }
@@ -321,33 +325,60 @@
   }
 
   function renderStep2(docs) {
+    // Find the best-recommended spine across the WHOLE folder, not just the first doc.
+    // Priority: filenames mentioning "note" or "contract" or "agreement" win.
+    const recommendedName = (() => {
+      const score = d => (/note/i.test(d.name) ? 3 : 0) + (/contract/i.test(d.name) ? 3 : 0) + (/agreement/i.test(d.name) ? 2 : 0) + (/signed/i.test(d.name) ? 2 : 0);
+      const ranked = [...docs].map(d => ({ d, s: score(d) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+      return ranked.length ? ranked[0].d.name : null;
+    })();
+
+    const selectedName = state.data.spineDocument?.name || null;
+    const selectedBanner = selectedName
+      ? `<div class="nci-success-card" style="margin: 0 0 1rem;"><strong>Selected as spine:</strong> ${escapeHtml(selectedName)}. Click any other document below to switch, or continue to step 3.</div>`
+      : `<div class="nci-claude" style="margin: 0 0 1rem;"><div class="nci-claude-label">How this step works</div>Click any document below to mark it as your case's spine. If the document isn't here yet, use <strong>+ Upload spine document</strong> to add it now without leaving the intake.</div>`;
+
     return `
       <div class="nci-label">Step 2 — Spine document</div>
       <h3 class="nci-h">Pick the document this case revolves around</h3>
       <p class="nci-p">The spine is what every claim gets checked against. For a contract dispute, that's usually the contract itself. Every subsequent analysis Claude runs will include the spine's full text as authoritative context, with its SHA-256 stored so we detect if it ever changes.</p>
 
+      ${selectedBanner}
+
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.85rem;">
+        <button class="nci-btn primary" id="nci-spine-upload-btn"><span style="margin-right: 0.3rem;">+</span> Upload spine document</button>
+        <input type="file" id="nci-spine-upload-input" style="display: none;" />
+        <span style="font-size: 0.78rem; color: var(--ink-muted);">Or click an existing document below</span>
+      </div>
+
       <div id="nci-spine-list">
         ${docs.length === 0
-          ? `<div class="nci-note">Your case folder doesn't have any documents yet. Add the central document (contract, note, lease, complaint) via the +File button in the main workspace, then come back to this step.</div>`
-          : docs.map((doc, i) => {
+          ? `<div class="nci-note">Your case folder doesn't have any documents yet. Click <strong>+ Upload spine document</strong> above to add the central document (contract, note, lease, complaint).</div>`
+          : docs.map((doc) => {
               const ext = (doc.name.split('.').pop() || 'FILE').toUpperCase().slice(0, 4);
-              const isSelected = state.data.spineDocument && state.data.spineDocument.name === doc.name;
-              const isRecommended = i === 0 && /note|contract|agreement/i.test(doc.name);
+              const isSelected = selectedName === doc.name;
+              const isRecommended = recommendedName === doc.name;
+              const sizeStr = doc.size ? (doc.size < 1024 * 1024 ? Math.round(doc.size / 1024) + ' KB' : (doc.size / 1024 / 1024).toFixed(1) + ' MB') : '';
+              const metaParts = [];
+              if (sizeStr) metaParts.push(sizeStr);
+              if (isRecommended) metaParts.push('<strong style="color: var(--blue);">recommended spine</strong>');
+              if (doc.meta?.sha256) metaParts.push('SHA-256 captured');
               return `
                 <div class="nci-row-doc ${isSelected ? 'selected' : ''}" data-nci-spine="${escapeHtml(doc.name)}">
+                  <div class="nci-radio-circle ${isSelected ? 'checked' : ''}"></div>
                   <div class="nci-row-doc-icon">${ext}</div>
                   <div style="flex:1; min-width:0;">
                     <div class="nci-row-doc-name">${escapeHtml(doc.name)}</div>
-                    <div class="nci-row-doc-meta">${doc.size ? Math.round(doc.size/1024) + ' KB' : ''}${isRecommended ? ' · recommended spine' : ''}${doc.meta?.sha256 ? ' · SHA-256 captured' : ''}</div>
+                    <div class="nci-row-doc-meta">${metaParts.join(' · ')}</div>
                   </div>
-                  ${isSelected ? '<div style="color: var(--blue); font-size: 1.1rem;">✓</div>' : ''}
+                  ${isSelected ? '<div style="color: var(--blue); font-size: 0.95rem; font-weight: 600; white-space: nowrap;">✓ Spine</div>' : ''}
                 </div>
               `;
             }).join('')
         }
       </div>
 
-      <div class="nci-note">
+      <div class="nci-note" style="margin-top: 1rem;">
         Picking a spine doesn't lock anything. You can swap it later. You can also designate a companion spine — for example a TRO petition that runs alongside the main note — but that's optional and comes after the intake.
       </div>
     `;
@@ -521,6 +552,18 @@
           renderCurrentStep();
         });
       });
+      const uploadBtn = document.getElementById('nci-spine-upload-btn');
+      const uploadInput = document.getElementById('nci-spine-upload-input');
+      if (uploadBtn && uploadInput) {
+        uploadBtn.addEventListener('click', () => uploadInput.click());
+        uploadInput.addEventListener('change', async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          await uploadSpineDoc(file);
+          e.target.value = '';
+          await renderCurrentStep();
+        });
+      }
     } else if (state.step === 3) {
       const docs = await loadDocs();
       body.innerHTML = renderStep3(docs);
@@ -625,6 +668,49 @@
       }
       return docs.sort((a, b) => a.name.localeCompare(b.name));
     } catch { return []; }
+  }
+
+  async function uploadSpineDoc(file) {
+    const fh = window.__nci_folderHandle;
+    if (!fh) {
+      alert('No case folder is linked. Pick a folder from the workspace first.');
+      return;
+    }
+    try {
+      const docsDir = await fh.getDirectoryHandle('documents', { create: true });
+      // Write the file
+      const outHandle = await docsDir.getFileHandle(file.name, { create: true });
+      const w = await outHandle.createWritable();
+      await w.write(file);
+      await w.close();
+      // Hash it so we can carry the SHA-256 in the spine record
+      let sha256 = null;
+      try {
+        const buf = await file.arrayBuffer();
+        const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+        sha256 = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        // Write a minimal meta sidecar so the main workspace recognizes it
+        const meta = {
+          schemaVersion: 1,
+          filename: file.name,
+          addedAt: new Date().toISOString(),
+          sha256,
+          size: file.size,
+          contentType: file.type || 'application/octet-stream',
+          source: 'intake-spine-upload'
+        };
+        const metaHandle = await docsDir.getFileHandle(file.name + '.meta.json', { create: true });
+        const mw = await metaHandle.createWritable();
+        await mw.write(JSON.stringify(meta, null, 2));
+        await mw.close();
+      } catch (e) { console.warn('sidecar write failed', e); }
+      // Auto-select this newly uploaded file as the spine
+      state.data.spineDocument = { name: file.name, sha256, selectedAt: new Date().toISOString() };
+      if (typeof window.showToast === 'function') window.showToast('Uploaded and selected as spine: ' + file.name);
+    } catch (e) {
+      console.warn('spine upload failed', e);
+      alert('Upload failed: ' + e.message);
+    }
   }
 
   async function pickMailFolder() {
