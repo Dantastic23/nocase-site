@@ -254,7 +254,7 @@
  * ========================================================================= */
 
 const CONFIG = Object.assign({
-  apiBase: 'https://5zx7bsqkoavfgjbczf6iqzkd5a0xvody.lambda-url.us-east-1.on.aws',
+  apiBase: 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze',
   chatPath: '',
   folderHandleKey: 'noCaseFolderHandle',
   maxExtractChars: 50000   // cap per-doc extracted text in browser memory
@@ -596,7 +596,7 @@ async function importDirectory() {
 async function callClaude(userMessage, attachedDocSnippets, opts = {}) {
   const allDocs = (await listDocuments()).map(d => ({ name: d.name, hasText: docTextCache.has(d.name) || (d.meta?.extractedTextLength > 0) }));
   const payload = {
-    caseTitle: caseState.title,
+    task: 'chat', caseTitle: caseState.title,
     caseId: caseState.caseId,
     caseType: caseState.caseType || 'unknown',
     caseDescription: caseState.caseDescription || '',
