@@ -1180,7 +1180,106 @@
     }
 
     close();
-    if (typeof window.showToast === 'function') window.showToast('Intake saved to your case folder');
+    if (typeof window.showToast === 'function') window.showToast('Intake saved. Generating case brief in the background...');
+
+    // Kick off case-brief generation in the background — don't block the UI
+    generateBriefInBackground(cs).catch(e => console.warn('brief generation failed', e));
+  }
+
+  // ============================================================================
+  // CASE-BRIEF GENERATION — calls Lambda generate_brief, writes case-brief.md
+  // ============================================================================
+
+  async function generateBriefInBackground(cs) {
+    const fh = window.__nci_folderHandle;
+    if (!fh) return;
+
+    // Gather inputs: spine text (if available), document index, intake data
+    const step1 = state.data.step1 || {};
+    const spineDoc = state.data.spineDocument || null;
+    let spineText = null;
+    if (spineDoc && spineDoc.name) {
+      try {
+        const docsDir = await fh.getDirectoryHandle('documents');
+        const spineHandle = await docsDir.getFileHandle(spineDoc.name);
+        const spineFile = await spineHandle.getFile();
+        // Use the host's text-extraction cache if available
+        if (window.docTextCache && window.docTextCache.get(spineDoc.name)) {
+          spineText = window.docTextCache.get(spineDoc.name);
+        } else if (typeof window.extractText === 'function') {
+          spineText = await window.extractText(spineFile);
+        }
+      } catch (e) { console.warn('spine text load failed', e); }
+    }
+
+    // Load the document index for context
+    let documents = [];
+    try {
+      if (typeof window.listDocuments === 'function') {
+        const docs = await window.listDocuments();
+        documents = docs.map(d => ({
+          name: d.name,
+          textPreview: d.meta?.extractedTextPreview || null,
+          hasText: !!d.meta?.extractedTextLength
+        }));
+      }
+    } catch (e) { console.warn('docs list failed', e); }
+
+    // Check for existing brief (refresh mode)
+    let existingBrief = null;
+    try {
+      const briefH = await fh.getFileHandle('case-brief.md');
+      const briefF = await briefH.getFile();
+      existingBrief = await briefF.text();
+    } catch { /* no existing brief — first generation */ }
+
+    // Build payload for generate_brief
+    const payload = {
+      task: 'generate_brief',
+      caseTitle: cs.title || 'Untitled matter',
+      caseDescription: step1.description || cs.caseDescription || '',
+      caseType: step1.caseType || cs.caseType || 'unknown',
+      jurisdiction: step1.jurisdiction || 'Texas',
+      userRole: step1.userRole || null,
+      otherRole: step1.otherRole || null,
+      spineDocument: spineDoc,
+      spineText,
+      documents,
+      goals: state.data.goals || '',
+      redLines: state.data.redLines || [],
+      values: state.data.values || [],
+      existingBrief
+    };
+
+    const API = (typeof CONFIG !== 'undefined' && CONFIG.apiBase) || (window.NC_CONFIG && window.NC_CONFIG.apiBase) || 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
+
+    try {
+      const r = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const data = await r.json();
+      const brief = data?.result?.brief || data?.result || '';
+      if (!brief) throw new Error('empty brief returned');
+
+      // Write case-brief.md to the case folder root
+      const out = await fh.getFileHandle('case-brief.md', { create: true });
+      const w = await out.createWritable();
+      await w.write(brief);
+      await w.close();
+
+      if (typeof window.showToast === 'function') window.showToast('Case brief saved — Claude will use it on every turn');
+    } catch (e) {
+      console.warn('generate_brief failed', e);
+      if (typeof window.showToast === 'function') window.showToast('Brief generation failed: ' + e.message);
+    }
+  }
+
+  // Expose for manual regeneration from Brief tab (Phase B)
+  if (typeof window !== 'undefined') {
+    window.NoCaseIntake = window.NoCaseIntake || {};
   }
 
   // ============================================================================
@@ -1200,7 +1299,7 @@
     }
 
     // Expose for programmatic invocation
-    window.NoCaseIntake = { open, close };
+    window.NoCaseIntake = { open, close, regenerateBrief: () => generateBriefInBackground(window.__nci_caseState) };
 
     // Bridge: expose host's caseState and folderHandle to our module by
     // polling for them. The host page initializes these inside an IIFE,
