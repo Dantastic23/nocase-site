@@ -894,7 +894,7 @@ async function sendMessage() {
   let used = 0;
   const attachedSnippets = [];
   for (const name of namesByRecency) {
-    const t = docTextCache.get(name);
+    let t = docTextCache.get(name); if (!t) { try { const _dd = await folderHandle.getDirectoryHandle('documents'); const _fh = await _dd.getFileHandle(name); const _f = await _fh.getFile(); t = await extractText(_f); if (t) docTextCache.set(name, t); } catch (e) { console.warn('attach re-extract failed:', name, e); } }
     if (!t) continue;
     const remaining = MAX_CONTEXT_BUDGET - used;
     if (remaining <= 0) break;
