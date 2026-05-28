@@ -137,6 +137,30 @@
   #fileInput { display: none; }
   .toast { position: fixed; bottom: 1rem; right: 1rem; background: var(--ink); color: var(--paper); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(14,14,14,0.2); z-index: 100; opacity: 0; transition: opacity 0.2s, transform 0.2s; transform: translateY(8px); max-width: 320px; }
   .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* tab panes */
+  .tab-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .tab-pane[hidden] { display: none; }
+  .brief-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.4rem; border-bottom: 1px solid var(--border); background: #faf8f3; gap: 0.5rem; flex-wrap: wrap; }
+  .brief-meta { color: var(--muted); font-size: 0.82rem; }
+  .brief-actions { display: flex; gap: 0.4rem; }
+  .brief-btn { padding: 0.4rem 0.85rem; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 0.82rem; color: var(--ink); }
+  .brief-btn:hover { background: #f0efea; }
+  .brief-btn[disabled] { opacity: 0.5; cursor: wait; }
+  .brief-body { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink); }
+  .brief-body h1 { font-family: "Playfair Display", serif; font-size: 1.5rem; margin: 0 0 0.4rem; font-weight: 600; }
+  .brief-body h2 { font-family: "Playfair Display", serif; font-size: 1.15rem; margin: 1.4rem 0 0.4rem; padding-top: 0.6rem; border-top: 1px solid var(--border); font-weight: 500; }
+  .brief-body h3 { font-size: 0.98rem; margin: 1rem 0 0.3rem; font-weight: 600; }
+  .brief-body p { margin: 0.5rem 0; }
+  .brief-body ul, .brief-body ol { margin: 0.4rem 0 0.6rem; padding-left: 1.4rem; }
+  .brief-body li { margin: 0.15rem 0; }
+  .brief-body strong { color: var(--ink); }
+  .brief-body code { background: #f0efea; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
+  .brief-body hr { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+  .brief-body blockquote { border-left: 3px solid #c9a575; padding: 0.15rem 0 0.15rem 1rem; margin: 0.7rem 0; color: var(--muted); }
+  .brief-edit { flex: 1; width: 100%; padding: 1.5rem 2rem; font-family: "SF Mono", Menlo, monospace; font-size: 0.85rem; line-height: 1.5; border: none; outline: none; resize: none; background: #fdfcf8; box-sizing: border-box; color: var(--ink); }
+  .brief-empty { color: var(--muted); padding: 2rem 0; text-align: center; }
+  nav a { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -178,11 +202,11 @@
   <aside class="sidebar">
     <h3>Workspace</h3>
     <nav>
-      <a href="#"><span class="ic">◆</span>Overview</a>
-      <a href="#" class="active"><span class="ic">⌘</span>Chat with Claude</a>
-      <a href="#"><span class="ic">⊟</span>Documents</a>
-      <a href="#"><span class="ic">∇</span>Verdict</a>
-      <a href="#"><span class="ic">⚑</span>Objections</a>
+      <a href="#" data-tab="brief"><span class="ic">★</span>Brief</a>
+      <a href="#" class="active" data-tab="chat"><span class="ic">⌘</span>Chat with Claude</a>
+      <a href="#" data-tab="documents"><span class="ic">⊟</span>Documents</a>
+      <a href="#" data-tab="verdict"><span class="ic">∇</span>Verdict</a>
+      <a href="#" data-tab="objections"><span class="ic">⚑</span>Objections</a>
     </nav>
     <div class="case-card" id="caseCard">
       <div class="label">Case</div>
@@ -228,8 +252,9 @@
         <button id="exportBtn">Export case</button>
       </div>
     </div>
-    <div class="chat-messages" id="msgs"></div>
-    <div class="composer-wrap">
+    <div class="tab-pane" data-pane="chat">
+      <div class="chat-messages" id="msgs"></div>
+      <div class="composer-wrap">
       <div class="attachments" id="attachments"></div>
       <div class="composer">
         <textarea id="composerInput" placeholder="Ask Claude about your case…  (Cmd+click documents on the left to attach)" rows="1"></textarea>
@@ -238,6 +263,19 @@
       <div class="composer-foot">
         <span><strong>Snippets only</strong> are sent to Claude. Full files stay on your computer.</span>
         <span>Cmd+Enter to send</span>
+      </div>
+    </div>
+    </div>
+    <div class="tab-pane" data-pane="brief" hidden>
+      <div class="brief-toolbar">
+        <span class="brief-meta" id="briefMeta">Last updated: —</span>
+        <div class="brief-actions">
+          <button id="briefEditBtn" class="brief-btn">Edit</button>
+          <button id="briefRefreshBtn" class="brief-btn">Refresh from evidence</button>
+        </div>
+      </div>
+      <div class="brief-body" id="briefBody">
+        <div class="brief-empty">No case brief yet. Click <strong>Refresh from evidence</strong> to generate one from your case folder.</div>
       </div>
     </div>
   </section>
@@ -978,6 +1016,23 @@ function showToast(msg) {
   }
   await tryRestoreFolder();
 })();
+/* Brief tab (Phase B) */
+(function () {
+  function renderMd(md) { if (!md) return ""; const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); const lines = md.split(/\r?\n/); let out=[],inList=null; function close(){if(inList){out.push("</"+inList+">");inList=null;}} for(let i=0;i<lines.length;i++){const ln=lines[i]; if(/^\s*$/.test(ln)){close();continue;} if(/^---+\s*$/.test(ln)){close();out.push("<hr/>");continue;} let m; if((m=ln.match(/^(#{1,4})\s+(.+)$/))){close();out.push("<h"+m[1].length+">"+inl(esc(m[2]))+"</h"+m[1].length+">");continue;} if((m=ln.match(/^>\s+(.+)$/))){close();out.push("<blockquote>"+inl(esc(m[1]))+"</blockquote>");continue;} if((m=ln.match(/^[-*+]\s+(.+)$/))){if(inList!=="ul"){close();out.push("<ul>");inList="ul";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} if((m=ln.match(/^\d+\.\s+(.+)$/))){if(inList!=="ol"){close();out.push("<ol>");inList="ol";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} close(); out.push("<p>"+inl(esc(ln))+"</p>");} close(); return out.join("\n"); }
+  function inl(s){ s=s.replace(/\`([^\`]+)\`/g,"<code>$1</code>"); s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>"); s=s.replace(/(^|[^*])\*([^*]+)\*/g,"$1<em>$2</em>"); return s; }
+  async function readBrief(){ const fh=(typeof folderHandle!=="undefined"&&folderHandle)||window.__nci_folderHandle; if(!fh) return null; try{ const h=await fh.getFileHandle("case-brief.md"); const f=await h.getFile(); return {text:await f.text(),lastModified:f.lastModified,size:f.size}; }catch(e){return null;} }
+  async function writeBrief(text){ const fh=(typeof folderHandle!=="undefined"&&folderHandle)||window.__nci_folderHandle; if(!fh) throw new Error("no folder"); const h=await fh.getFileHandle("case-brief.md",{create:true}); const w=await h.createWritable(); await w.write(text); await w.close(); }
+  function ts(ms){ if(!ms) return "—"; const d=new Date(ms); const t=d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); const today=new Date(); today.setHours(0,0,0,0); const dd=new Date(d); dd.setHours(0,0,0,0); return dd.getTime()===today.getTime()?"Today at "+t:d.toLocaleDateString([],{month:"short",day:"numeric"})+" at "+t; }
+  let edit=false, cur="";
+  async function load(){ const b=document.getElementById("briefBody"),m=document.getElementById("briefMeta"),e=document.getElementById("briefEditBtn"); if(!b) return; b.innerHTML='<div class="brief-empty">Loading…</div>'; const d=await readBrief(); if(!d){ b.innerHTML='<div class="brief-empty">No case brief yet. Click <strong>Refresh from evidence</strong> to generate one from your case folder.</div>'; m.textContent="Last updated: —"; e.disabled=true; return; } cur=d.text; b.innerHTML=renderMd(d.text); m.textContent="Last updated: "+ts(d.lastModified)+" · "+(d.size/1024).toFixed(1)+" KB"; e.disabled=false; }
+  function enter(){ const b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); b.innerHTML=""; const ta=document.createElement("textarea"); ta.className="brief-edit"; ta.value=cur; ta.id="briefEditArea"; b.appendChild(ta); b.style.padding="0"; e.textContent="Save"; r.disabled=true; edit=true; setTimeout(()=>ta.focus(),0); }
+  async function save(){ const ta=document.getElementById("briefEditArea"),b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(!ta) return; const nt=ta.value; e.disabled=true; try{ await writeBrief(nt); cur=nt; b.style.padding=""; e.textContent="Edit"; r.disabled=false; edit=false; await load(); if(typeof showToast==="function") showToast("Brief saved"); }catch(x){ alert("Save failed: "+x.message); e.disabled=false; } }
+  async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
+  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); }
+  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief") sw(t); else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+
 </script>
 <script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=1" defer></script></body>
 </html>
