@@ -1194,9 +1194,16 @@
     const fh = window.__nci_folderHandle;
     if (!fh) return;
 
-    // Gather inputs: spine text (if available), document index, intake data
-    const step1 = state.data.step1 || {};
-    const spineDoc = state.data.spineDocument || null;
+    // Gather inputs: prefer fresh wizard state, fall back to what's saved in case.json
+    // so manual regeneration works without re-opening the wizard
+    const savedIntake = cs?.intake || {};
+    const step1 = (state.data.step1 && Object.keys(state.data.step1).length)
+      ? state.data.step1
+      : (savedIntake.step1 || { description: cs?.caseDescription || '', caseType: cs?.caseType || 'unknown' });
+    const spineDoc = state.data.spineDocument || savedIntake.spineDocument || null;
+    const fallbackGoals = state.data.goals || savedIntake.goals || '';
+    const fallbackRedLines = state.data.redLines?.length ? state.data.redLines : (savedIntake.redLines || []);
+    const fallbackValues = state.data.values?.length ? state.data.values : (savedIntake.values || []);
     let spineText = null;
     if (spineDoc && spineDoc.name) {
       try {
@@ -1212,18 +1219,35 @@
       } catch (e) { console.warn('spine text load failed', e); }
     }
 
-    // Load the document index for context
+    // Load every document's FULL extracted text — not just preview — so the
+    // brief generator can pull dates, dollar amounts, payment receipts, and
+    // admissions from the actual document bodies, not just filenames.
     let documents = [];
     try {
       if (typeof window.listDocuments === 'function') {
         const docs = await window.listDocuments();
-        documents = docs.map(d => ({
-          name: d.name,
-          textPreview: d.meta?.extractedTextPreview || null,
-          hasText: !!d.meta?.extractedTextLength
+        const docsDir = await fh.getDirectoryHandle('documents');
+        documents = await Promise.all(docs.map(async (d) => {
+          // 1) Try in-memory cache first (set when doc was originally added or last attached)
+          let text = (window.docTextCache && window.docTextCache.get(d.name)) || null;
+          // 2) Cache miss → re-extract from disk on the fly
+          if (!text && typeof window.extractText === 'function') {
+            try {
+              const handle = await docsDir.getFileHandle(d.name);
+              const file = await handle.getFile();
+              text = await window.extractText(file);
+              if (text && window.docTextCache) window.docTextCache.set(d.name, text);
+            } catch (e) { console.warn('full-text extract failed for', d.name, e); }
+          }
+          return {
+            name: d.name,
+            text: text || null,
+            hasText: !!text,
+            length: text ? text.length : 0
+          };
         }));
       }
-    } catch (e) { console.warn('docs list failed', e); }
+    } catch (e) { console.warn('docs full-text load failed', e); }
 
     // Check for existing brief (refresh mode)
     let existingBrief = null;
@@ -1245,9 +1269,9 @@
       spineDocument: spineDoc,
       spineText,
       documents,
-      goals: state.data.goals || '',
-      redLines: state.data.redLines || [],
-      values: state.data.values || [],
+      goals: fallbackGoals,
+      redLines: fallbackRedLines,
+      values: fallbackValues,
       existingBrief
     };
 
