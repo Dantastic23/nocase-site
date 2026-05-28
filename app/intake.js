@@ -1342,12 +1342,156 @@
           window.__nci_caseState = caseState;
           window.__nci_folderHandle = folderHandle;
           window.listDocuments = (typeof listDocuments === 'function') ? listDocuments : window.listDocuments;
+          window.extractText = (typeof extractText === 'function') ? extractText : window.extractText;
+          window.docTextCache = (typeof docTextCache !== 'undefined') ? docTextCache : window.docTextCache;
           window.saveCaseState = (typeof saveCaseState === 'function') ? saveCaseState : window.saveCaseState;
           window.showToast = (typeof showToast === 'function') ? showToast : window.showToast;
           clearInterval(bridge);
+
+          // Now that the bridge is established, wrap extractText with a server-side
+          // fallback (so any file the browser can't read gets sent to Bedrock
+          // multimodal) and kick off background re-extraction of any stale 0-char
+          // documents that were added before the libraries worked properly.
+          installLambdaExtractFallback();
+          setTimeout(() => {
+            reextractStaleDocuments(folderHandle).catch(e => console.warn('reextract sweep failed', e));
+          }, 2500);
         }
       } catch (e) { /* still loading */ }
     }, 200);
+  }
+
+  // ==========================================================================
+  // Lambda fallback for extractText — when the browser's local extractors fail
+  // (image-only PDFs, unusual DOCX structures, HEIC photos), send the file as
+  // base64 to the Lambda's extract_text task, which hands it to Bedrock's
+  // multimodal Claude for forensic transcription.
+  // ==========================================================================
+  function installLambdaExtractFallback() {
+    if (window.__extractTextHasFallback) return;
+    const original = window.extractText;
+    if (typeof original !== 'function') return;
+    window.__extractTextHasFallback = true;
+
+    window.extractText = async function extractTextWithFallback(file) {
+      // 1) Try local extraction
+      let localText = null;
+      try { localText = await original(file); }
+      catch (e) { localText = null; }
+      const localChars = localText ? localText.replace(/\s+/g, '').length : 0;
+      // If local extraction yielded meaningful text, use it
+      if (localChars >= 50) return localText;
+      // 2) Fall back to Lambda extract_text — supports PDF/DOCX natively
+      // plus images. Skip for genuinely unsupported types (audio, video, archives).
+      const supportedExt = /\.(pdf|doc|docx|csv|xls|xlsx|html|htm|txt|md|png|jpg|jpeg|gif|webp)$/i;
+      if (!supportedExt.test(file.name)) return localText;
+      try {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        // Chunked btoa to avoid call-stack issues on larger files
+        let bin = '';
+        const CHUNK = 0x8000;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+        }
+        const base64 = btoa(bin);
+        const API = (typeof CONFIG !== 'undefined' && CONFIG.apiBase)
+          || (window.NC_CONFIG && window.NC_CONFIG.apiBase)
+          || 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
+        console.log('[extract] falling back to Lambda for', file.name, '(local got', localChars, 'chars)');
+        const r = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: 'extract_text', filename: file.name, base64, mimeType: file.type })
+        });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const data = await r.json();
+        const serverText = data && data.result && data.result.text ? data.result.text : '';
+        if (serverText && serverText.length > 0) {
+          console.log('[extract] Lambda returned', serverText.length, 'chars for', file.name);
+          return serverText;
+        }
+      } catch (e) {
+        console.warn('[extract] Lambda fallback failed for', file.name, e);
+      }
+      return localText; // best-effort
+    };
+  }
+
+  // ==========================================================================
+  // reextractStaleDocuments — silent sweep on case open. Iterates documents/,
+  // finds any sidecar with extractedTextLength < 100, re-extracts (now with
+  // Lambda fallback in place), and updates the sidecar. Runs once per case
+  // open, in the background, no UI blocking.
+  // ==========================================================================
+  async function reextractStaleDocuments(fh) {
+    if (!fh || window.__nci_reextractInProgress) return { checked: 0, fixed: 0, skipped: 0 };
+    window.__nci_reextractInProgress = true;
+    let docsDir;
+    try { docsDir = await fh.getDirectoryHandle('documents'); }
+    catch (e) { window.__nci_reextractInProgress = false; return { checked: 0, fixed: 0, skipped: 0 }; }
+
+    let checked = 0, fixed = 0, skipped = 0;
+    const stale = [];
+
+    // First pass: identify stale files
+    for await (const [name, handle] of docsDir.entries()) {
+      if (handle.kind !== 'file') continue;
+      if (name.endsWith('.meta.json')) continue;
+      if (name === '.DS_Store') continue;
+      checked++;
+      let sidecar = null;
+      try {
+        const sh = await docsDir.getFileHandle(name + '.meta.json');
+        const sf = await sh.getFile();
+        sidecar = JSON.parse(await sf.text());
+      } catch (e) { skipped++; continue; }
+      const currentLen = sidecar.extractedTextLength || 0;
+      if (currentLen >= 100) continue;
+      stale.push({ name, handle, sidecar });
+    }
+
+    if (stale.length === 0) {
+      window.__nci_reextractInProgress = false;
+      console.log('[reextract] all documents already extracted (' + checked + ' checked)');
+      return { checked, fixed: 0, skipped };
+    }
+
+    console.log('[reextract] found', stale.length, 'stale document(s) to re-extract');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Re-extracting ' + stale.length + ' document' + (stale.length === 1 ? '' : 's') + '… (server-side, may take a minute)');
+    }
+
+    // Second pass: re-extract each
+    for (const { name, handle, sidecar } of stale) {
+      try {
+        const file = await handle.getFile();
+        const newText = await window.extractText(file); // wrapped — falls back to Lambda
+        const newLen = newText ? newText.length : 0;
+        if (newLen > (sidecar.extractedTextLength || 0)) {
+          sidecar.extractedTextLength = newLen;
+          sidecar.extractedTextPreview = newText.slice(0, 300);
+          sidecar.lastReextractedAt = new Date().toISOString();
+          const sw = await docsDir.getFileHandle(name + '.meta.json', { create: true });
+          const writable = await sw.createWritable();
+          await writable.write(JSON.stringify(sidecar, null, 2));
+          await writable.close();
+          if (window.docTextCache) window.docTextCache.set(name, newText);
+          fixed++;
+          console.log('[reextract] fixed', name, '→', newLen, 'chars');
+        } else {
+          console.log('[reextract] no improvement for', name, '(got', newLen, 'chars)');
+        }
+      } catch (e) {
+        console.warn('[reextract] error on', name, e);
+      }
+    }
+
+    if (fixed > 0 && typeof window.showToast === 'function') {
+      window.showToast('Re-extracted ' + fixed + ' document' + (fixed === 1 ? '' : 's') + '. Click ★ Brief → Refresh from evidence to update the brief.');
+    }
+    window.__nci_reextractInProgress = false;
+    return { checked, fixed, skipped };
   }
 
   whenReady(attach);
