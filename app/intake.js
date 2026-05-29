@@ -1275,10 +1275,15 @@
       existingBrief
     };
 
-    const API = (typeof CONFIG !== 'undefined' && CONFIG.apiBase) || (window.NC_CONFIG && window.NC_CONFIG.apiBase) || 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
+    // Brief generation uses the Lambda Function URL (2-min timeout) instead
+    // of API Gateway (29-sec timeout). This lets us send full document text
+    // and use larger output budgets without hitting Gateway Timeout (504).
+    // Other tasks (chat, extract_text, etc.) keep going through API Gateway
+    // since they fit inside 29s and benefit from API Gateway's caching/throttling.
+    const FUNCTION_URL = 'https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/';
 
     try {
-      const r = await fetch(API, {
+      const r = await fetch(FUNCTION_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
