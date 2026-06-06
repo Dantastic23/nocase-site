@@ -161,6 +161,38 @@
   .brief-edit { flex: 1; width: 100%; padding: 1.5rem 2rem; font-family: "SF Mono", Menlo, monospace; font-size: 0.85rem; line-height: 1.5; border: none; outline: none; resize: none; background: #fdfcf8; box-sizing: border-box; color: var(--ink); }
   .brief-empty { color: var(--muted); padding: 2rem 0; text-align: center; }
   nav a { cursor: pointer; }
+
+  /* Objections tab */
+  .obj-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.4rem; border-bottom: 1px solid var(--rule); background: #faf8f3; gap: 0.5rem; flex-wrap: wrap; }
+  .obj-meta { color: var(--ink-muted); font-size: 0.82rem; }
+  .obj-actions { display: flex; gap: 0.4rem; }
+  .obj-btn { padding: 0.4rem 0.85rem; border: 1px solid var(--rule); background: white; border-radius: 6px; cursor: pointer; font-size: 0.82rem; color: var(--ink); }
+  .obj-btn:hover { background: #f0efea; }
+  .obj-btn[disabled] { opacity: 0.5; cursor: wait; }
+  .obj-btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .obj-btn.primary:hover { background: #000; }
+  .obj-body { flex: 1; overflow-y: auto; padding: 1.2rem 1.6rem; }
+  .obj-empty { color: var(--ink-muted); padding: 2rem 0; text-align: center; line-height: 1.6; }
+  .obj-summary { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+  .obj-summary .score { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; }
+  .obj-summary .score.high { color: var(--green); }
+  .obj-summary .score.mid { color: var(--gold); }
+  .obj-summary .score.low { color: var(--red); }
+  .obj-summary p { margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .obj-card { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; }
+  .obj-card.resolved { opacity: 0.55; }
+  .obj-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .obj-card-head h4 { font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; margin: 0; flex: 1; }
+  .obj-threat { font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 100px; white-space: nowrap; }
+  .obj-threat.critical { background: var(--red-light); color: var(--red); }
+  .obj-threat.serious { background: var(--gold-light); color: var(--gold); }
+  .obj-threat.moderate { background: var(--blue-light); color: var(--blue); }
+  .obj-section { margin-top: 0.6rem; }
+  .obj-section-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 0.25rem; }
+  .obj-section p { margin: 0; font-size: 0.88rem; line-height: 1.5; }
+  .obj-neutralizer { background: var(--green-light); border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.5rem; font-size: 0.82rem; color: var(--green); }
+  .obj-resolve-btn { margin-top: 0.6rem; font-size: 0.75rem; color: var(--ink-muted); background: none; border: 1px solid var(--rule); border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; }
+  .obj-resolve-btn:hover { background: var(--paper-dark); }
 </style>
 </head>
 <body>
@@ -276,6 +308,21 @@
       </div>
       <div class="brief-body" id="briefBody">
         <div class="brief-empty">No case brief yet. Click <strong>Refresh from evidence</strong> to generate one from your case folder.</div>
+      </div>
+    </div>
+    <div class="tab-pane" data-pane="objections" hidden>
+      <div class="obj-toolbar">
+        <span class="obj-meta" id="objMeta">No objections generated yet</span>
+        <div class="obj-actions">
+          <button id="objGenBtn" class="obj-btn primary">Generate objections</button>
+          <button id="objMoreBtn" class="obj-btn" disabled>Find more</button>
+        </div>
+      </div>
+      <div class="obj-body" id="objBody">
+        <div class="obj-empty">
+          Click <strong>Generate objections</strong> to have Claude play opposing counsel.<br>
+          <small>Reads your case brief and attacks it with the strongest arguments the other side could raise, then drafts your best responses.</small>
+        </div>
       </div>
     </div>
   </section>
@@ -1028,9 +1075,185 @@ function showToast(msg) {
   function enter(){ const b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); b.innerHTML=""; const ta=document.createElement("textarea"); ta.className="brief-edit"; ta.value=cur; ta.id="briefEditArea"; b.appendChild(ta); b.style.padding="0"; e.textContent="Save"; r.disabled=true; edit=true; setTimeout(()=>ta.focus(),0); }
   async function save(){ const ta=document.getElementById("briefEditArea"),b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(!ta) return; const nt=ta.value; e.disabled=true; try{ await writeBrief(nt); cur=nt; b.style.padding=""; e.textContent="Edit"; r.disabled=false; edit=false; await load(); if(typeof showToast==="function") showToast("Brief saved"); }catch(x){ alert("Save failed: "+x.message); e.disabled=false; } }
   async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
-  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); }
-  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief") sw(t); else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
+  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); }
+  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections") sw(t); else if(t==="documents") { sw("chat"); /* docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+
+/* ─── Objections tab ──────────────────────────────────────────────────── */
+(function(){
+  let objData = null; // { objections: [...], summary, strengthScore, generatedAt, resolved: [] }
+
+  async function readObjFile() {
+    const fh = (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+    if (!fh) return null;
+    try {
+      const h = await fh.getFileHandle("objections.json");
+      const f = await h.getFile();
+      return JSON.parse(await f.text());
+    } catch { return null; }
+  }
+
+  async function writeObjFile(data) {
+    const fh = (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+    if (!fh) throw new Error("no folder");
+    const h = await fh.getFileHandle("objections.json", { create: true });
+    const w = await h.createWritable();
+    await w.write(JSON.stringify(data, null, 2));
+    await w.close();
+  }
+
+  function escObj(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  function renderObj() {
+    const body = document.getElementById("objBody");
+    const meta = document.getElementById("objMeta");
+    const moreBtn = document.getElementById("objMoreBtn");
+    if (!body || !objData || !objData.objections || !objData.objections.length) {
+      if (body && !objData) body.innerHTML = '<div class="obj-empty">Click <strong>Generate objections</strong> to have Claude play opposing counsel.<br><small>Reads your case brief and attacks it with the strongest arguments the other side could raise, then drafts your best responses.</small></div>';
+      return;
+    }
+    const resolved = objData.resolved || [];
+    moreBtn.disabled = false;
+
+    // Score display
+    const sc = objData.strengthScore || 0;
+    const scClass = sc >= 7 ? "high" : sc >= 4 ? "mid" : "low";
+    const critCount = objData.objections.filter(o => o.threat === "critical" && !resolved.includes(o.id)).length;
+    const seriousCount = objData.objections.filter(o => o.threat === "serious" && !resolved.includes(o.id)).length;
+
+    let html = `<div class="obj-summary"><div style="display:flex;align-items:center;gap:1rem;"><span class="score ${scClass}">${sc}/10</span><div><strong>Case strength</strong><br><span style="font-size:0.82rem;color:var(--ink-muted);">${critCount} critical · ${seriousCount} serious · ${objData.objections.length} total</span></div></div>`;
+    if (objData.summary) html += `<p>${escObj(objData.summary)}</p>`;
+    html += `</div>`;
+
+    // Sort: critical first, then serious, then moderate; resolved at bottom
+    const order = { critical: 0, serious: 1, moderate: 2 };
+    const sorted = [...objData.objections].sort((a, b) => {
+      const aRes = resolved.includes(a.id) ? 1 : 0;
+      const bRes = resolved.includes(b.id) ? 1 : 0;
+      if (aRes !== bRes) return aRes - bRes;
+      return (order[a.threat] || 3) - (order[b.threat] || 3);
+    });
+
+    for (const o of sorted) {
+      const isResolved = resolved.includes(o.id);
+      html += `<div class="obj-card${isResolved ? " resolved" : ""}">`;
+      html += `<div class="obj-card-head"><h4>${escObj(o.objection)}</h4><span class="obj-threat ${o.threat || "moderate"}">${(o.threat || "moderate").toUpperCase()}</span></div>`;
+      html += `<div class="obj-section"><div class="obj-section-label">Your best response</div><p>${escObj(o.response)}</p></div>`;
+      if (o.neutralizer) html += `<div class="obj-neutralizer"><strong>To neutralize:</strong> ${escObj(o.neutralizer)}</div>`;
+      html += `<button class="obj-resolve-btn" data-obj-id="${escObj(o.id)}">${isResolved ? "Unresolve" : "Mark resolved"}</button>`;
+      html += `</div>`;
+    }
+    body.innerHTML = html;
+    meta.textContent = `Generated ${new Date(objData.generatedAt).toLocaleDateString()} · ${objData.objections.length} objections · ${resolved.length} resolved`;
+
+    // Bind resolve buttons
+    body.querySelectorAll(".obj-resolve-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-obj-id");
+        if (!objData.resolved) objData.resolved = [];
+        const idx = objData.resolved.indexOf(id);
+        if (idx >= 0) objData.resolved.splice(idx, 1); else objData.resolved.push(id);
+        await writeObjFile(objData);
+        renderObj();
+      });
+    });
+  }
+
+  window.objLoad = async function() {
+    const body = document.getElementById("objBody");
+    if (!body) return;
+    const saved = await readObjFile();
+    if (saved) { objData = saved; renderObj(); }
+  };
+
+  async function generateObjections(findMore) {
+    const genBtn = document.getElementById("objGenBtn");
+    const moreBtn = document.getElementById("objMoreBtn");
+    const body = document.getElementById("objBody");
+    genBtn.disabled = true; moreBtn.disabled = true;
+    genBtn.textContent = "Generating… (30–90s)";
+    body.innerHTML = '<div class="obj-empty">Claude (Opus 4.7) is playing opposing counsel…<br><small>Analyzing your case brief for vulnerabilities. This takes 30–90 seconds.</small></div>';
+
+    try {
+      // Read the case brief
+      const fh = (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+      if (!fh) throw new Error("No folder linked");
+      let briefText = "";
+      try {
+        const bh = await fh.getFileHandle("case-brief.md");
+        const bf = await bh.getFile();
+        briefText = await bf.text();
+      } catch {
+        throw new Error("No case brief found. Generate a brief first (Brief tab → Refresh from evidence).");
+      }
+      if (!briefText.trim()) throw new Error("Case brief is empty. Generate a brief first.");
+
+      // Read case.json for title
+      let caseTitle = "Untitled";
+      try {
+        const ch = await fh.getFileHandle("case.json");
+        const cf = await ch.getFile();
+        const cj = JSON.parse(await cf.text());
+        caseTitle = cj.title || cj.intake?.step1?.caseType || "Untitled";
+      } catch {}
+
+      const priorObjections = findMore && objData?.objections ? objData.objections : [];
+
+      const resp = await fetch(CONFIG.apiBase, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "generate_objections",
+          caseTitle,
+          caseBrief: briefText,
+          priorObjections
+        })
+      });
+      if (!resp.ok) throw new Error("Lambda returned " + resp.status);
+      const data = await resp.json();
+      const result = data.result || data;
+
+      if (findMore && objData?.objections) {
+        // Merge new objections, keeping existing resolved state
+        const existingIds = new Set(objData.objections.map(o => o.id));
+        const newObjs = (result.objections || []).map((o, i) => ({
+          ...o,
+          id: o.id || ("obj_more_" + (objData.objections.length + i + 1))
+        })).filter(o => !existingIds.has(o.id));
+        objData.objections.push(...newObjs);
+        objData.summary = result.summary || objData.summary;
+        objData.strengthScore = result.strengthScore || objData.strengthScore;
+        objData.generatedAt = result.generatedAt || new Date().toISOString();
+      } else {
+        objData = {
+          objections: (result.objections || []).map((o, i) => ({ ...o, id: o.id || ("obj_" + (i + 1)) })),
+          summary: result.summary || "",
+          strengthScore: result.strengthScore || null,
+          generatedAt: result.generatedAt || new Date().toISOString(),
+          resolved: []
+        };
+      }
+
+      await writeObjFile(objData);
+      renderObj();
+      if (typeof showToast === "function") showToast("Objections generated: " + (objData.objections.length) + " total");
+    } catch (e) {
+      body.innerHTML = `<div class="obj-empty" style="color:var(--red);">Error: ${escObj(e.message)}</div>`;
+      if (typeof showToast === "function") showToast("Objection generation failed: " + e.message);
+    } finally {
+      genBtn.disabled = false; moreBtn.disabled = false;
+      genBtn.textContent = "Generate objections";
+    }
+  }
+
+  function objInit() {
+    const genBtn = document.getElementById("objGenBtn");
+    const moreBtn = document.getElementById("objMoreBtn");
+    if (genBtn) genBtn.addEventListener("click", () => generateObjections(false));
+    if (moreBtn) moreBtn.addEventListener("click", () => generateObjections(true));
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", objInit); else objInit();
 })();
 
 </script>
