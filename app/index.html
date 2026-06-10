@@ -210,6 +210,26 @@
   .obj-neutralizer { background: var(--green-light); border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.5rem; font-size: 0.82rem; color: var(--green); }
   .obj-resolve-btn { margin-top: 0.6rem; font-size: 0.75rem; color: var(--ink-muted); background: none; border: 1px solid var(--rule); border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; }
   .obj-resolve-btn:hover { background: var(--paper-dark); }
+  .obj-resolve-row { display: flex; gap: 0.4rem; margin-top: 0.7rem; flex-wrap: wrap; }
+  .obj-resolve-row .obj-resolve-btn { margin-top: 0; }
+  .obj-resolve-btn.accept { color: var(--green); border-color: #c4e6d3; }
+  .obj-resolve-btn.accept:hover { background: var(--green-light); }
+  .obj-resolve-btn.evidence { color: var(--blue); border-color: #c2d4f6; }
+  .obj-resolve-btn.evidence:hover { background: var(--blue-light); }
+  .obj-resolve-btn.concede { color: var(--gold); border-color: #e9d8a2; }
+  .obj-resolve-btn.concede:hover { background: var(--gold-light); }
+  .obj-res-panel { margin-top: 0.7rem; border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem 0.8rem; background: var(--paper); }
+  .obj-res-panel .obj-section-label { margin-bottom: 0.4rem; }
+  .obj-res-docs { max-height: 160px; overflow-y: auto; margin-bottom: 0.5rem; }
+  .obj-res-docs label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.15rem 0; cursor: pointer; }
+  .obj-res-panel textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--rule); border-radius: 4px; padding: 0.4rem 0.55rem; font-family: inherit; font-size: 0.8rem; resize: vertical; min-height: 50px; background: white; }
+  .obj-res-panel .panel-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; justify-content: flex-end; }
+  .obj-res-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 100px; margin-top: 0.6rem; }
+  .obj-res-badge.accepted { background: var(--green-light); color: var(--green); }
+  .obj-res-badge.evidence { background: var(--blue-light); color: var(--blue); }
+  .obj-res-badge.conceded { background: var(--gold-light); color: var(--gold); }
+  .obj-res-detail { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.45; }
+  .obj-res-detail code { font-size: 0.72rem; }
 </style>
 </head>
 <body>
@@ -1154,6 +1174,62 @@ function showToast(msg) {
 
   function escObj(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
+  // Resolution model: objData.resolutions = { [id]: { method, note, linkedDocs, resolvedAt } }
+  // method: "accepted" (Claude's response accepted) | "evidence" (docs linked) | "conceded" (known weakness)
+  // objData.resolved (string[]) is kept in sync for the stepper and old saves.
+  function getResolution(id) { return objData.resolutions?.[id] || null; }
+
+  async function resolveObjection(id, method, note, linkedDocs) {
+    if (!objData.resolutions) objData.resolutions = {};
+    if (!objData.resolved) objData.resolved = [];
+    objData.resolutions[id] = { method, note: note || null, linkedDocs: linkedDocs || [], resolvedAt: new Date().toISOString() };
+    if (!objData.resolved.includes(id)) objData.resolved.push(id);
+    await writeObjFile(objData);
+    renderObj();
+  }
+
+  async function reopenObjection(id) {
+    if (objData.resolutions) delete objData.resolutions[id];
+    if (objData.resolved) { const i = objData.resolved.indexOf(id); if (i >= 0) objData.resolved.splice(i, 1); }
+    await writeObjFile(objData);
+    renderObj();
+  }
+
+  const RES_LABELS = { accepted: "Response accepted", evidence: "Evidence linked", conceded: "Conceded — known weakness" };
+
+  let openPanel = null; // { id, mode: "evidence"|"concede" }
+
+  async function renderResPanel(card, o) {
+    const panel = document.createElement("div");
+    panel.className = "obj-res-panel";
+    if (openPanel.mode === "evidence") {
+      let docs = [];
+      try { docs = await listDocuments(); } catch {}
+      panel.innerHTML = `<div class="obj-section-label">Link the evidence that overcomes this objection</div>
+        <div class="obj-res-docs">${docs.length ? docs.map(d => `<label><input type="checkbox" value="${escObj(d.name)}"> ${escObj(d.name)}</label>`).join("") : '<span style="font-size:0.8rem;color:var(--ink-muted);">No documents in folder yet — add the evidence first (Documents column).</span>'}</div>
+        <textarea placeholder="How does this evidence neutralize the objection? (optional but recommended — goes in the attorney packet)"></textarea>
+        <div class="panel-actions"><button class="obj-resolve-btn" data-act="cancel">Cancel</button><button class="obj-resolve-btn evidence" data-act="confirm">Resolve with evidence</button></div>`;
+      panel.querySelector('[data-act="confirm"]').addEventListener("click", async () => {
+        const picked = [...panel.querySelectorAll('input:checked')].map(i => i.value);
+        if (!picked.length) { if (typeof showToast === "function") showToast("Select at least one document — or use Concede if no evidence exists."); return; }
+        openPanel = null;
+        await resolveObjection(o.id, "evidence", panel.querySelector("textarea").value.trim(), picked);
+      });
+    } else {
+      panel.innerHTML = `<div class="obj-section-label">Concede as a known weakness</div>
+        <p style="font-size:0.8rem;color:var(--ink-muted);margin:0 0 0.5rem;">Some objections can't be overcome. Conceding honestly is better than pretending — your attorney needs to know the soft spots.</p>
+        <textarea placeholder="Why is this weakness survivable? What's the damage-control plan? (goes in the attorney packet)"></textarea>
+        <div class="panel-actions"><button class="obj-resolve-btn" data-act="cancel">Cancel</button><button class="obj-resolve-btn concede" data-act="confirm">Concede</button></div>`;
+      panel.querySelector('[data-act="confirm"]').addEventListener("click", async () => {
+        openPanel = null;
+        await resolveObjection(o.id, "conceded", panel.querySelector("textarea").value.trim(), []);
+      });
+    }
+    panel.querySelector('[data-act="cancel"]').addEventListener("click", () => { openPanel = null; renderObj(); });
+    card.appendChild(panel);
+    panel.querySelector("textarea")?.focus();
+  }
+
   function renderObj() {
     const body = document.getElementById("objBody");
     const meta = document.getElementById("objMeta");
@@ -1184,29 +1260,40 @@ function showToast(msg) {
       return (order[a.threat] || 3) - (order[b.threat] || 3);
     });
 
+    body.innerHTML = "";
     for (const o of sorted) {
       const isResolved = resolved.includes(o.id);
-      html += `<div class="obj-card${isResolved ? " resolved" : ""}">`;
-      html += `<div class="obj-card-head"><h4>${escObj(o.objection)}</h4><span class="obj-threat ${o.threat || "moderate"}">${(o.threat || "moderate").toUpperCase()}</span></div>`;
-      html += `<div class="obj-section"><div class="obj-section-label">Your best response</div><p>${escObj(o.response)}</p></div>`;
-      if (o.neutralizer) html += `<div class="obj-neutralizer"><strong>To neutralize:</strong> ${escObj(o.neutralizer)}</div>`;
-      html += `<button class="obj-resolve-btn" data-obj-id="${escObj(o.id)}">${isResolved ? "Unresolve" : "Mark resolved"}</button>`;
-      html += `</div>`;
-    }
-    body.innerHTML = html;
-    meta.textContent = `Generated ${new Date(objData.generatedAt).toLocaleDateString()} · ${objData.objections.length} objections · ${resolved.length} resolved`;
+      const res = getResolution(o.id);
+      const card = document.createElement("div");
+      card.className = "obj-card" + (isResolved ? " resolved" : "");
+      let inner = `<div class="obj-card-head"><h4>${escObj(o.objection)}</h4><span class="obj-threat ${o.threat || "moderate"}">${(o.threat || "moderate").toUpperCase()}</span></div>`;
+      inner += `<div class="obj-section"><div class="obj-section-label">Your best response</div><p>${escObj(o.response)}</p></div>`;
+      if (o.neutralizer && !isResolved) inner += `<div class="obj-neutralizer"><strong>To neutralize:</strong> ${escObj(o.neutralizer)}</div>`;
 
-    // Bind resolve buttons
-    body.querySelectorAll(".obj-resolve-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-obj-id");
-        if (!objData.resolved) objData.resolved = [];
-        const idx = objData.resolved.indexOf(id);
-        if (idx >= 0) objData.resolved.splice(idx, 1); else objData.resolved.push(id);
-        await writeObjFile(objData);
-        renderObj();
-      });
-    });
+      if (isResolved) {
+        const method = res?.method || "accepted";
+        inner += `<div><span class="obj-res-badge ${method}">✓ ${RES_LABELS[method] || "Resolved"}${res?.resolvedAt ? " · " + new Date(res.resolvedAt).toLocaleDateString() : ""}</span></div>`;
+        if (res?.linkedDocs?.length) inner += `<div class="obj-res-detail">Evidence: ${res.linkedDocs.map(d => `<code>${escObj(d)}</code>`).join(", ")}</div>`;
+        if (res?.note) inner += `<div class="obj-res-detail">${escObj(res.note)}</div>`;
+        inner += `<div class="obj-resolve-row"><button class="obj-resolve-btn" data-act="reopen">Reopen</button></div>`;
+      } else {
+        inner += `<div class="obj-resolve-row">
+          <button class="obj-resolve-btn accept" data-act="accept" title="Claude's drafted response above is sufficient to counter this objection">✓ Accept response</button>
+          <button class="obj-resolve-btn evidence" data-act="evidence" title="Link documents from your case folder that neutralize this objection">⊕ Link evidence</button>
+          <button class="obj-resolve-btn concede" data-act="concede" title="Acknowledge this as a weakness that can't be fully overcome">⚑ Concede</button>
+        </div>`;
+      }
+      card.innerHTML = inner;
+
+      card.querySelector('[data-act="accept"]')?.addEventListener("click", () => resolveObjection(o.id, "accepted", null, []));
+      card.querySelector('[data-act="evidence"]')?.addEventListener("click", () => { openPanel = { id: o.id, mode: "evidence" }; renderObj(); });
+      card.querySelector('[data-act="concede"]')?.addEventListener("click", () => { openPanel = { id: o.id, mode: "concede" }; renderObj(); });
+      card.querySelector('[data-act="reopen"]')?.addEventListener("click", () => reopenObjection(o.id));
+
+      body.appendChild(card);
+      if (openPanel && openPanel.id === o.id && !isResolved) renderResPanel(card, o);
+    }
+    meta.textContent = `Generated ${new Date(objData.generatedAt).toLocaleDateString()} · ${objData.objections.length} objections · ${resolved.length} resolved`;
   }
 
   window.objLoad = async function() {
