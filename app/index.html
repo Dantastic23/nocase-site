@@ -719,6 +719,8 @@ async function callClaude(userMessage, attachedDocSnippets, opts = {}) {
     task: 'chat', caseTitle: caseState.title,
     caseId: caseState.caseId,
     caseType: caseState.caseType || 'unknown',
+    userRole: caseState.intake?.step1?.userRole || null,
+    otherRole: caseState.intake?.step1?.otherRole || null,
     caseDescription: caseState.caseDescription || '', caseBrief: await (async () => { try { const _bh = await folderHandle.getFileHandle('case-brief.md'); const _bf = await _bh.getFile(); return await _bf.text(); } catch { return ''; } })(),
     documents: allDocs,
     attachedSnippets: attachedDocSnippets,  // [{name, text}]
