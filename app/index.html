@@ -726,6 +726,14 @@ async function callClaude(userMessage, attachedDocSnippets, opts = {}) {
     messageHistory: chatLog.messages.slice(-12).map(m => ({ role: m.role, content: m.content })),
     firstTurn: !!opts.firstTurn
   };
+  // Stage-aware chat: tell the Lambda where the user is in the guided
+  // pipeline so Claude proactively drives the next step.
+  const stageInfo = window.__ncStageInfo;
+  if (stageInfo) {
+    payload.caseStage = stageInfo.stage;
+    payload.missingEvidence = stageInfo.missingEvidence || [];
+    payload.unresolvedObjections = stageInfo.openObjections || [];
+  }
   try {
     const r = await fetch(CONFIG.apiBase + CONFIG.chatPath, {
       method: 'POST',
@@ -1353,6 +1361,7 @@ function showToast(msg) {
     const unresolved = objData.objections.filter(o => !resolved.includes(o.id));
     info.unresolvedTotal = unresolved.length;
     info.unresolvedCritical = unresolved.filter(o => o.threat === "critical" || o.threat === "serious").length;
+    info.openObjections = unresolved.slice(0, 6).map(o => ({ objection: o.objection, threat: o.threat, neutralizer: o.neutralizer }));
     if (info.unresolvedCritical > 0) {
       info.stage = "redline";
       info.hint = `${info.unresolvedCritical} critical/serious objection${info.unresolvedCritical === 1 ? "" : "s"} still unresolved. Overcome each one.`;
@@ -1403,6 +1412,7 @@ function showToast(msg) {
     let info;
     try { info = await computeStage(); } catch (e) { console.warn("stepper compute failed", e); return; }
     lastInfo = info;
+    window.__ncStageInfo = info;
     const curIdx = STAGES.indexOf(info.stage);
     stepsEl.querySelectorAll(".step").forEach(el => {
       const idx = STAGES.indexOf(el.getAttribute("data-step"));
