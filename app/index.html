@@ -57,8 +57,25 @@
   .browser-warn { background: var(--red-light); color: var(--red); border: 1px solid #f3c9c9; padding: 0.65rem 0.85rem; border-radius: 5px; font-size: 0.85rem; margin-top: 1rem; }
 
   /* Workspace */
-  .workspace { display: grid; grid-template-columns: 220px 320px 1fr; flex: 1; min-height: 0; }
+  .workspace { display: grid; grid-template-columns: 220px 320px 1fr; grid-template-rows: auto 1fr; flex: 1; min-height: 0; }
   .workspace.hidden { display: none; }
+
+  /* Case stepper — the guided pipeline spine */
+  .stepper { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.55rem 1.5rem; background: var(--ink); color: var(--paper); }
+  .stepper-steps { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; }
+  .step { display: flex; align-items: center; gap: 0.45rem; padding: 0.3rem 0.7rem; border-radius: 100px; font-size: 0.78rem; color: rgba(245,242,237,0.55); cursor: pointer; white-space: nowrap; border: 1px solid transparent; }
+  .step:hover { color: var(--paper); }
+  .step .num { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(245,242,237,0.4); display: grid; place-items: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0; }
+  .step.done { color: rgba(245,242,237,0.75); }
+  .step.done .num { background: var(--green); border-color: var(--green); color: white; }
+  .step.current { color: var(--ink); background: var(--paper); font-weight: 600; }
+  .step.current .num { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .step-arrow { color: rgba(245,242,237,0.3); font-size: 0.7rem; margin: 0 0.15rem; }
+  .stepper-next { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+  .stepper-hint { font-size: 0.72rem; color: rgba(245,242,237,0.65); max-width: 320px; text-align: right; }
+  .stepper-next button { background: var(--gold); color: var(--ink); border: none; padding: 0.4rem 0.95rem; border-radius: 5px; font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .stepper-next button:hover { filter: brightness(1.08); }
+  @media (max-width: 1100px) { .stepper-hint { display: none; } }
   .sidebar { border-right: 1px solid var(--rule); padding: 1rem 0.85rem; background: rgba(255,255,255,0.4); overflow-y: auto; }
   .sidebar h3 { font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; font-family: 'DM Sans', sans-serif; margin-bottom: 0.5rem; }
   .sidebar nav a { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.55rem; border-radius: 4px; color: var(--ink-soft); text-decoration: none; font-size: 0.82rem; margin-bottom: 0.1rem; }
@@ -231,6 +248,23 @@
 
 <!-- Workspace -->
 <div class="workspace hidden" id="workspace">
+  <div class="stepper" id="stepper">
+    <div class="stepper-steps" id="stepperSteps">
+      <span class="step" data-step="intake"><span class="num">1</span>Intake</span>
+      <span class="step-arrow">→</span>
+      <span class="step" data-step="evidence"><span class="num">2</span>Evidence</span>
+      <span class="step-arrow">→</span>
+      <span class="step" data-step="brief"><span class="num">3</span>Brief</span>
+      <span class="step-arrow">→</span>
+      <span class="step" data-step="redline"><span class="num">4</span>Red-line</span>
+      <span class="step-arrow">→</span>
+      <span class="step" data-step="packet"><span class="num">5</span>Packet</span>
+    </div>
+    <div class="stepper-next">
+      <span class="stepper-hint" id="stepperHint"></span>
+      <button id="stepperNextBtn">Next →</button>
+    </div>
+  </div>
   <aside class="sidebar">
     <h3>Workspace</h3>
     <nav>
@@ -645,6 +679,7 @@ async function addDocuments(files) {
   progressBar.classList.remove('active');
   extractStatus.textContent = '';
   showToast(`Added ${done} document${done === 1 ? '' : 's'} to your case folder`);
+  if (window.refreshStepper) window.refreshStepper();
 }
 
 /* Bulk import a directory the user picks */
@@ -914,6 +949,8 @@ async function initWorkspace() {
   if (chatLog.messages.length === 0 && hasIntakeContext && !caseState.intakeCompleted) {
     await runIntake();
   }
+
+  if (window.refreshStepper) window.refreshStepper();
 }
 
 async function runIntake() {
@@ -1074,8 +1111,9 @@ function showToast(msg) {
   async function load(){ const b=document.getElementById("briefBody"),m=document.getElementById("briefMeta"),e=document.getElementById("briefEditBtn"); if(!b) return; b.innerHTML='<div class="brief-empty">Loading…</div>'; const d=await readBrief(); if(!d){ b.innerHTML='<div class="brief-empty">No case brief yet. Click <strong>Refresh from evidence</strong> to generate one from your case folder.</div>'; m.textContent="Last updated: —"; e.disabled=true; return; } cur=d.text; b.innerHTML=renderMd(d.text); m.textContent="Last updated: "+ts(d.lastModified)+" · "+(d.size/1024).toFixed(1)+" KB"; e.disabled=false; }
   function enter(){ const b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); b.innerHTML=""; const ta=document.createElement("textarea"); ta.className="brief-edit"; ta.value=cur; ta.id="briefEditArea"; b.appendChild(ta); b.style.padding="0"; e.textContent="Save"; r.disabled=true; edit=true; setTimeout(()=>ta.focus(),0); }
   async function save(){ const ta=document.getElementById("briefEditArea"),b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(!ta) return; const nt=ta.value; e.disabled=true; try{ await writeBrief(nt); cur=nt; b.style.padding=""; e.textContent="Edit"; r.disabled=false; edit=false; await load(); if(typeof showToast==="function") showToast("Brief saved"); }catch(x){ alert("Save failed: "+x.message); e.disabled=false; } }
-  async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
+  async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); if(window.refreshStepper) window.refreshStepper(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
   function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); }
+  window.__ncSwitchTab = sw;
   function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections") sw(t); else if(t==="documents") { sw("chat"); /* docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
 })();
@@ -1101,6 +1139,7 @@ function showToast(msg) {
     const w = await h.createWritable();
     await w.write(JSON.stringify(data, null, 2));
     await w.close();
+    if (window.refreshStepper) window.refreshStepper();
   }
 
   function escObj(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -1254,6 +1293,139 @@ function showToast(msg) {
     if (moreBtn) moreBtn.addEventListener("click", () => generateObjections(true));
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", objInit); else objInit();
+})();
+
+/* ─── Case stepper — the guided pipeline spine ────────────────────────── */
+(function(){
+  const STAGES = ["intake", "evidence", "brief", "redline", "packet"];
+
+  async function fileExists(name) {
+    const fh = (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+    if (!fh) return null;
+    try { const h = await fh.getFileHandle(name); return await h.getFile(); } catch { return null; }
+  }
+
+  // Compute the case's current stage from actual on-disk state — always honest.
+  async function computeStage() {
+    const cs = (typeof caseState !== "undefined" && caseState) || {};
+    const info = { stage: "intake", hint: "", action: "", docCount: 0, missingEvidence: [], unresolvedCritical: 0, unresolvedTotal: 0 };
+
+    // 1. Intake
+    if (!cs.intakeCompleted) {
+      info.hint = "Tell us about your case so Claude knows what matters.";
+      info.action = "Start intake";
+      return info;
+    }
+
+    // 2. Evidence
+    let docs = [];
+    try { docs = await listDocuments(); } catch {}
+    info.docCount = docs.length;
+    const checklist = cs.intake?.evidenceChecklist || [];
+    info.missingEvidence = checklist.filter(c => c.status === "missing" || c.status === "partial").map(c => c.label);
+    if (docs.length === 0) {
+      info.stage = "evidence";
+      info.hint = "Upload your documents — the contract, communications, payment records.";
+      info.action = "Add documents";
+      return info;
+    }
+
+    // 3. Brief
+    const briefFile = await fileExists("case-brief.md");
+    if (!briefFile || briefFile.size < 100) {
+      info.stage = "brief";
+      info.hint = "Generate your case brief — the living document that grounds everything.";
+      info.action = "Generate brief";
+      return info;
+    }
+
+    // 4. Red-line
+    const objFile = await fileExists("objections.json");
+    let objData = null;
+    if (objFile) { try { objData = JSON.parse(await objFile.text()); } catch {} }
+    if (!objData || !objData.objections?.length) {
+      info.stage = "redline";
+      info.hint = "Pressure-test your case: Claude plays opposing counsel and attacks it.";
+      info.action = "Generate objections";
+      return info;
+    }
+    const resolved = objData.resolved || [];
+    const unresolved = objData.objections.filter(o => !resolved.includes(o.id));
+    info.unresolvedTotal = unresolved.length;
+    info.unresolvedCritical = unresolved.filter(o => o.threat === "critical" || o.threat === "serious").length;
+    if (info.unresolvedCritical > 0) {
+      info.stage = "redline";
+      info.hint = `${info.unresolvedCritical} critical/serious objection${info.unresolvedCritical === 1 ? "" : "s"} still unresolved. Overcome each one.`;
+      info.action = "Review objections";
+      return info;
+    }
+
+    // 5. Packet
+    info.stage = "packet";
+    info.hint = info.missingEvidence.length
+      ? `Almost there — still missing: ${info.missingEvidence.slice(0, 2).join(", ")}${info.missingEvidence.length > 2 ? "…" : ""}`
+      : "Case is pressure-tested. Compile your attorney handoff packet.";
+    info.action = "Compile packet";
+    return info;
+  }
+
+  function go(stage, info) {
+    const sw = window.__ncSwitchTab;
+    switch (stage) {
+      case "intake":
+        if (window.NoCaseIntake?.open) window.NoCaseIntake.open();
+        else if (typeof runIntake === "function") { if (sw) sw("chat"); runIntake(); }
+        break;
+      case "evidence":
+        if (sw) sw("chat");
+        document.getElementById("addDocBtn")?.click();
+        break;
+      case "brief":
+        if (sw) sw("brief");
+        // If no brief yet, kick off generation directly
+        fileExists("case-brief.md").then(f => { if (!f || f.size < 100) document.getElementById("briefRefreshBtn")?.click(); });
+        break;
+      case "redline":
+        if (sw) sw("objections");
+        break;
+      case "packet":
+        if (typeof showToast === "function") showToast("Packet compiler is coming next — your case is pressure-tested and ready.");
+        break;
+    }
+  }
+
+  let lastInfo = null;
+  window.refreshStepper = async function() {
+    const stepsEl = document.getElementById("stepperSteps");
+    const hintEl = document.getElementById("stepperHint");
+    const btnEl = document.getElementById("stepperNextBtn");
+    if (!stepsEl) return;
+    let info;
+    try { info = await computeStage(); } catch (e) { console.warn("stepper compute failed", e); return; }
+    lastInfo = info;
+    const curIdx = STAGES.indexOf(info.stage);
+    stepsEl.querySelectorAll(".step").forEach(el => {
+      const idx = STAGES.indexOf(el.getAttribute("data-step"));
+      el.classList.toggle("done", idx < curIdx);
+      el.classList.toggle("current", idx === curIdx);
+    });
+    hintEl.textContent = info.hint;
+    btnEl.textContent = info.action + " →";
+  };
+
+  function init() {
+    document.getElementById("stepperNextBtn")?.addEventListener("click", () => {
+      if (lastInfo) go(lastInfo.stage, lastInfo);
+    });
+    // Soft gate: any step is clickable — direction, not lockdown.
+    document.querySelectorAll("#stepperSteps .step").forEach(el => {
+      el.addEventListener("click", () => go(el.getAttribute("data-step"), lastInfo));
+    });
+    // Keep the stepper honest: refresh on any tab click and periodically.
+    document.querySelectorAll("nav a[data-tab]").forEach(a => a.addEventListener("click", () => setTimeout(window.refreshStepper, 300)));
+    setInterval(() => { if (!document.getElementById("workspace")?.classList.contains("hidden")) window.refreshStepper(); }, 15000);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 
 </script>
