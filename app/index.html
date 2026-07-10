@@ -230,6 +230,22 @@
   .obj-res-badge.conceded { background: var(--gold-light); color: var(--gold); }
   .obj-res-detail { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.45; }
   .obj-res-detail code { font-size: 0.72rem; }
+
+  /* Readiness tab */
+  .rdy-hero { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1.4rem 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; }
+  .rdy-dial { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; flex-shrink: 0; color: white; }
+  .rdy-dial.high { background: var(--green); }
+  .rdy-dial.mid { background: var(--gold); }
+  .rdy-dial.low { background: var(--red); }
+  .rdy-hero h4 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+  .rdy-hero p { margin: 0; font-size: 0.86rem; color: var(--ink-soft); }
+  .rdy-row { background: white; border: 1px solid var(--rule); border-radius: 6px; padding: 0.65rem 0.9rem; margin-bottom: 0.45rem; display: flex; align-items: center; gap: 0.7rem; font-size: 0.85rem; }
+  .rdy-row .pts { font-weight: 700; width: 62px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .rdy-row .pts.full { color: var(--green); }
+  .rdy-row .pts.part { color: var(--gold); }
+  .rdy-row .pts.zero { color: var(--red); }
+  .rdy-row .what { flex: 1; }
+  .rdy-row .todo { font-size: 0.76rem; color: var(--ink-muted); }
 </style>
 </head>
 <body>
@@ -291,7 +307,7 @@
       <a href="#" data-tab="brief"><span class="ic">★</span>Brief</a>
       <a href="#" class="active" data-tab="chat"><span class="ic">⌘</span>Chat with Claude</a>
       <a href="#" data-tab="documents"><span class="ic">⊟</span>Documents</a>
-      <a href="#" data-tab="verdict"><span class="ic">∇</span>Verdict</a>
+      <a href="#" data-tab="readiness"><span class="ic">∇</span>Readiness</a>
       <a href="#" data-tab="objections"><span class="ic">⚑</span>Objections</a>
     </nav>
     <div class="case-card" id="caseCard">
@@ -362,6 +378,17 @@
       </div>
       <div class="brief-body" id="briefBody">
         <div class="brief-empty">No case brief yet. Click <strong>Refresh from evidence</strong> to generate one from your case folder.</div>
+      </div>
+    </div>
+    <div class="tab-pane" data-pane="readiness" hidden>
+      <div class="obj-toolbar">
+        <span class="obj-meta" id="rdyMeta">Readiness is computed from your case state</span>
+        <div class="obj-actions">
+          <button id="rdyPacketBtn" class="obj-btn primary">Compile attorney packet</button>
+        </div>
+      </div>
+      <div class="obj-body" id="rdyBody">
+        <div class="obj-empty">Loading readiness…</div>
       </div>
     </div>
     <div class="tab-pane" data-pane="objections" hidden>
@@ -1134,6 +1161,7 @@ function showToast(msg) {
 (function () {
   function renderMd(md) { if (!md) return ""; const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); const lines = md.split(/\r?\n/); let out=[],inList=null; function close(){if(inList){out.push("</"+inList+">");inList=null;}} for(let i=0;i<lines.length;i++){const ln=lines[i]; if(/^\s*$/.test(ln)){close();continue;} if(/^---+\s*$/.test(ln)){close();out.push("<hr/>");continue;} let m; if((m=ln.match(/^(#{1,4})\s+(.+)$/))){close();out.push("<h"+m[1].length+">"+inl(esc(m[2]))+"</h"+m[1].length+">");continue;} if((m=ln.match(/^>\s+(.+)$/))){close();out.push("<blockquote>"+inl(esc(m[1]))+"</blockquote>");continue;} if((m=ln.match(/^[-*+]\s+(.+)$/))){if(inList!=="ul"){close();out.push("<ul>");inList="ul";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} if((m=ln.match(/^\d+\.\s+(.+)$/))){if(inList!=="ol"){close();out.push("<ol>");inList="ol";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} close(); out.push("<p>"+inl(esc(ln))+"</p>");} close(); return out.join("\n"); }
   function inl(s){ s=s.replace(/\`([^\`]+)\`/g,"<code>$1</code>"); s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>"); s=s.replace(/(^|[^*])\*([^*]+)\*/g,"$1<em>$2</em>"); return s; }
+  window.__ncRenderMd = renderMd;
   async function readBrief(){ const fh=(typeof folderHandle!=="undefined"&&folderHandle)||window.__nci_folderHandle; if(!fh) return null; try{ const h=await fh.getFileHandle("case-brief.md"); const f=await h.getFile(); return {text:await f.text(),lastModified:f.lastModified,size:f.size}; }catch(e){return null;} }
   async function writeBrief(text){ const fh=(typeof folderHandle!=="undefined"&&folderHandle)||window.__nci_folderHandle; if(!fh) throw new Error("no folder"); const h=await fh.getFileHandle("case-brief.md",{create:true}); const w=await h.createWritable(); await w.write(text); await w.close(); }
   function ts(ms){ if(!ms) return "—"; const d=new Date(ms); const t=d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); const today=new Date(); today.setHours(0,0,0,0); const dd=new Date(d); dd.setHours(0,0,0,0); return dd.getTime()===today.getTime()?"Today at "+t:d.toLocaleDateString([],{month:"short",day:"numeric"})+" at "+t; }
@@ -1142,9 +1170,9 @@ function showToast(msg) {
   function enter(){ const b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); b.innerHTML=""; const ta=document.createElement("textarea"); ta.className="brief-edit"; ta.value=cur; ta.id="briefEditArea"; b.appendChild(ta); b.style.padding="0"; e.textContent="Save"; r.disabled=true; edit=true; setTimeout(()=>ta.focus(),0); }
   async function save(){ const ta=document.getElementById("briefEditArea"),b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(!ta) return; const nt=ta.value; e.disabled=true; try{ await writeBrief(nt); cur=nt; b.style.padding=""; e.textContent="Edit"; r.disabled=false; edit=false; await load(); if(typeof showToast==="function") showToast("Brief saved"); }catch(x){ alert("Save failed: "+x.message); e.disabled=false; } }
   async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); if(window.refreshStepper) window.refreshStepper(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
-  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); }
+  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); if(n==="readiness"&&window.rdyLoad) window.rdyLoad(); }
   window.__ncSwitchTab = sw;
-  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections") sw(t); else if(t==="documents") { sw("chat"); /* docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
+  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections"||t==="readiness") sw(t); else if(t==="documents") { sw("chat"); /* docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
 })();
 
@@ -1487,7 +1515,7 @@ function showToast(msg) {
         if (sw) sw("objections");
         break;
       case "packet":
-        if (typeof showToast === "function") showToast("Packet compiler is coming next — your case is pressure-tested and ready.");
+        if (sw) sw("readiness");
         break;
     }
   }
@@ -1524,6 +1552,195 @@ function showToast(msg) {
     document.querySelectorAll("nav a[data-tab]").forEach(a => a.addEventListener("click", () => setTimeout(window.refreshStepper, 300)));
     setInterval(() => { if (!document.getElementById("workspace")?.classList.contains("hidden")) window.refreshStepper(); }, 15000);
   }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+
+/* ─── Readiness tab + attorney packet compiler ────────────────────────── */
+(function(){
+  function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  async function readCase(name) {
+    const fh = (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+    if (!fh) return null;
+    try { const h = await fh.getFileHandle(name); const f = await h.getFile(); return f; } catch { return null; }
+  }
+
+  // Gather everything the readiness score and packet need.
+  async function gather() {
+    const cs = (typeof caseState !== "undefined" && caseState) || {};
+    const g = { cs, brief: null, briefModified: null, obj: null, docs: [] };
+    const bf = await readCase("case-brief.md");
+    if (bf) { g.brief = await bf.text(); g.briefModified = bf.lastModified; }
+    const of = await readCase("objections.json");
+    if (of) { try { g.obj = JSON.parse(await of.text()); } catch {} }
+    try { g.docs = await listDocuments(); } catch {}
+    return g;
+  }
+
+  // Readiness model (100 pts):
+  // intake 10 · evidence checklist 20 · brief 20 (12 if stale) ·
+  // objections generated 10 · critical/serious resolved 30 · moderate resolved 10
+  function score(g) {
+    const rows = [];
+    const cs = g.cs;
+
+    rows.push({ pts: cs.intakeCompleted ? 10 : 0, max: 10, what: "Intake completed",
+      todo: cs.intakeCompleted ? null : "Run the intake wizard so Claude knows the shape of your case." });
+
+    const checklist = cs.intake?.evidenceChecklist || [];
+    let evPts = 0;
+    if (checklist.length) {
+      const got = checklist.reduce((s, c) => s + (c.status === "found" ? 1 : c.status === "partial" ? 0.5 : 0), 0);
+      evPts = Math.round(20 * got / checklist.length);
+    } else if (g.docs.length) { evPts = 10; }
+    const missing = checklist.filter(c => c.status === "missing" || c.status === "partial").map(c => c.label);
+    rows.push({ pts: evPts, max: 20, what: "Evidence checklist",
+      todo: missing.length ? "Still missing: " + missing.join("; ") : null });
+
+    let briefPts = 0, briefTodo = "Generate the case brief (Brief tab → Refresh from evidence).";
+    if (g.brief && g.brief.length > 100) {
+      const newestDoc = Math.max(0, ...g.docs.map(d => Date.parse(d.meta?.addedAt || 0) || 0));
+      const stale = newestDoc && g.briefModified && newestDoc > g.briefModified;
+      briefPts = stale ? 12 : 20;
+      briefTodo = stale ? "Documents were added after the brief was last generated — refresh it." : null;
+    }
+    rows.push({ pts: briefPts, max: 20, what: "Case brief", todo: briefTodo });
+
+    const objs = g.obj?.objections || [];
+    rows.push({ pts: objs.length ? 10 : 0, max: 10, what: "Pressure-tested (objections generated)",
+      todo: objs.length ? null : "Generate objections — Claude plays opposing counsel." });
+
+    const resolved = g.obj?.resolved || [];
+    const hard = objs.filter(o => o.threat === "critical" || o.threat === "serious");
+    const hardDone = hard.filter(o => resolved.includes(o.id)).length;
+    rows.push({ pts: hard.length ? Math.round(30 * hardDone / hard.length) : (objs.length ? 30 : 0), max: 30,
+      what: `Critical & serious objections overcome (${hardDone}/${hard.length})`,
+      todo: hardDone < hard.length ? `${hard.length - hardDone} still open — resolve with evidence, accept the response, or concede.` : null });
+
+    const mod = objs.filter(o => o.threat === "moderate");
+    const modDone = mod.filter(o => resolved.includes(o.id)).length;
+    rows.push({ pts: mod.length ? Math.round(10 * modDone / mod.length) : (objs.length ? 10 : 0), max: 10,
+      what: `Moderate objections addressed (${modDone}/${mod.length})`,
+      todo: modDone < mod.length ? `${mod.length - modDone} moderate objection${mod.length - modDone === 1 ? "" : "s"} open.` : null });
+
+    const total = rows.reduce((s, r) => s + r.pts, 0);
+    return { total, rows };
+  }
+
+  window.rdyLoad = async function() {
+    const body = document.getElementById("rdyBody");
+    const meta = document.getElementById("rdyMeta");
+    if (!body) return;
+    const g = await gather();
+    const { total, rows } = score(g);
+    const cls = total >= 75 ? "high" : total >= 45 ? "mid" : "low";
+    const verdictLine = total >= 75
+      ? "This case file is attorney-ready. Compile the packet and get it in front of counsel."
+      : total >= 45
+        ? "Solid foundation, but a reviewing attorney will find holes. Work the items below first."
+        : "Not ready yet — an attorney would send you home for homework. Follow the pipeline.";
+    let html = `<div class="rdy-hero"><div class="rdy-dial ${cls}">${total}</div><div><h4>Readiness: ${total}/100</h4><p>${verdictLine}</p></div></div>`;
+    for (const r of rows) {
+      const pcls = r.pts >= r.max ? "full" : r.pts > 0 ? "part" : "zero";
+      html += `<div class="rdy-row"><span class="pts ${pcls}">${r.pts}/${r.max}</span><span class="what">${esc(r.what)}${r.todo ? `<div class="todo">→ ${esc(r.todo)}</div>` : ""}</span></div>`;
+    }
+    body.innerHTML = html;
+    meta.textContent = `Scored ${new Date().toLocaleDateString()} · ${g.docs.length} documents on file`;
+  };
+
+  /* ── Attorney packet ── */
+  function fmtBytes(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : n > 1024 ? (n / 1024).toFixed(1) + " KB" : (n || 0) + " B"; }
+
+  async function compilePacket() {
+    const btn = document.getElementById("rdyPacketBtn");
+    btn.disabled = true; btn.textContent = "Compiling…";
+    try {
+      const g = await gather();
+      const { total } = score(g);
+      const cs = g.cs;
+      const md = window.__ncRenderMd || (t => "<pre>" + esc(t) + "</pre>");
+      const now = new Date();
+      const title = cs.title || "Untitled matter";
+      const objs = g.obj?.objections || [];
+      const resolved = g.obj?.resolved || [];
+      const resolutions = g.obj?.resolutions || {};
+      const RES_LBL = { accepted: "RESPONSE ACCEPTED", evidence: "RESOLVED WITH EVIDENCE", conceded: "CONCEDED — KNOWN WEAKNESS" };
+      const order = { critical: 0, serious: 1, moderate: 2 };
+
+      let objHtml = "";
+      if (objs.length) {
+        const sorted = [...objs].sort((a, b) => (order[a.threat] ?? 3) - (order[b.threat] ?? 3));
+        objHtml = sorted.map((o, i) => {
+          const res = resolutions[o.id];
+          const isRes = resolved.includes(o.id);
+          return `<div class="pk-obj">
+            <h3>Objection ${i + 1} <span class="pk-threat pk-${esc(o.threat || "moderate")}">${esc((o.threat || "moderate").toUpperCase())}</span>${isRes ? ` <span class="pk-status">${RES_LBL[res?.method] || "RESOLVED"}${res?.resolvedAt ? " · " + new Date(res.resolvedAt).toLocaleDateString() : ""}</span>` : ' <span class="pk-status pk-open">OPEN</span>'}</h3>
+            <p class="pk-obj-text">${esc(o.objection)}</p>
+            <p><strong>Response:</strong> ${esc(o.response)}</p>
+            ${res?.linkedDocs?.length ? `<p><strong>Supporting evidence:</strong> ${res.linkedDocs.map(esc).join(", ")}</p>` : ""}
+            ${res?.note ? `<p><strong>Note:</strong> ${esc(res.note)}</p>` : ""}
+            ${!isRes && o.neutralizer ? `<p><strong>Outstanding need:</strong> ${esc(o.neutralizer)}</p>` : ""}
+          </div>`;
+        }).join("");
+      }
+
+      const evRows = g.docs.map(d => {
+        const m = d.meta || {};
+        return `<tr><td>${esc(d.name)}</td><td>${m.addedAt ? new Date(m.addedAt).toLocaleString() : "—"}</td><td>${fmtBytes(d.size)}</td><td class="pk-hash">${esc(m.sha256 || "—")}</td></tr>`;
+      }).join("");
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Attorney Packet — ${esc(title)}</title><style>
+        body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.55; font-size: 13px; }
+        h1 { font-size: 1.9rem; margin: 0 0 0.2rem; } h2 { font-size: 1.25rem; border-bottom: 2px solid #111; padding-bottom: 0.25rem; margin: 2rem 0 0.8rem; page-break-after: avoid; } h3 { font-size: 1rem; margin: 1.1rem 0 0.35rem; page-break-after: avoid; }
+        .pk-cover { text-align: center; padding: 3.5rem 0 2.5rem; border-bottom: 3px double #111; margin-bottom: 1.5rem; }
+        .pk-cover .sub { color: #555; font-size: 0.95rem; } .pk-cover .score { font-size: 2.6rem; font-weight: 700; margin-top: 1rem; }
+        .pk-meta { font-size: 0.85rem; color: #555; margin-top: 0.8rem; }
+        .pk-obj { border: 1px solid #bbb; border-radius: 5px; padding: 0.7rem 1rem; margin-bottom: 0.7rem; page-break-inside: avoid; }
+        .pk-obj-text { font-style: italic; }
+        .pk-threat { font-size: 0.68rem; padding: 0.1rem 0.45rem; border: 1px solid currentColor; border-radius: 3px; vertical-align: middle; }
+        .pk-critical { color: #b3261e; } .pk-serious { color: #9a6b00; } .pk-moderate { color: #2b4fad; }
+        .pk-status { font-size: 0.68rem; color: #1a7a4a; vertical-align: middle; } .pk-status.pk-open { color: #b3261e; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; } th, td { border: 1px solid #ccc; padding: 0.3rem 0.45rem; text-align: left; vertical-align: top; }
+        th { background: #f0f0f0; } .pk-hash { font-family: Menlo, monospace; font-size: 0.62rem; word-break: break-all; }
+        blockquote { border-left: 3px solid #999; margin: 0.6rem 0; padding: 0.1rem 0 0.1rem 0.9rem; color: #444; }
+        code { font-family: Menlo, monospace; font-size: 0.85em; background: #f2f2f2; padding: 0 0.25rem; }
+        .pk-disclaimer { margin-top: 2.5rem; padding-top: 0.8rem; border-top: 1px solid #999; font-size: 0.78rem; color: #555; font-style: italic; }
+        .pk-printbar { position: fixed; top: 0; right: 0; padding: 0.6rem 1rem; background: #111; }
+        .pk-printbar button { font-size: 0.9rem; padding: 0.4rem 1rem; cursor: pointer; }
+        @media print { .pk-printbar { display: none; } body { padding: 0; } }
+      </style></head><body>
+      <div class="pk-printbar"><button onclick="window.print()">Print / Save as PDF</button></div>
+      <div class="pk-cover">
+        <div class="sub">ATTORNEY HANDOFF PACKET</div>
+        <h1>${esc(title)}</h1>
+        <div class="sub">${esc(cs.intake?.step1?.jurisdiction || "")}${cs.intake?.step1?.userRole ? " · Prepared for the " + esc(cs.intake.step1.userRole) : ""}</div>
+        <div class="score">Readiness: ${total}/100</div>
+        <div class="pk-meta">Compiled ${now.toLocaleString()} · ${g.docs.length} evidence items · ${objs.length} objections analyzed (${resolved.length} resolved)<br>Prepared with NoCase (nocase.org) — assembled by the client with AI assistance</div>
+      </div>
+      <h2>I. Case Brief</h2>
+      ${g.brief ? md(g.brief) : "<p><em>No case brief was generated.</em></p>"}
+      <h2>II. Adversarial Analysis — Objections &amp; Responses</h2>
+      <p>Each objection below was generated by AI acting as opposing counsel, then addressed by the client. Status reflects how each was resolved.</p>
+      ${objHtml || "<p><em>No objections were generated.</em></p>"}
+      <h2>III. Evidence Index &amp; Chain of Custody</h2>
+      <p>Every document in the case folder, with the timestamp it was added and its SHA-256 fingerprint. A matching hash proves the file is bit-for-bit identical to the one indexed here.</p>
+      <table><thead><tr><th>Document</th><th>Added</th><th>Size</th><th>SHA-256</th></tr></thead><tbody>${evRows || '<tr><td colspan="4">No documents.</td></tr>'}</tbody></table>
+      <div class="pk-disclaimer">This packet is the client's own working notes assembled with AI assistance (NoCase by Benchmark). It is not legal advice, not privileged communication, and not a substitute for licensed counsel. All AI-drafted analysis should be independently verified. Citations, if any, must be confirmed before reliance.</div>
+      </body></html>`;
+
+      const w = window.open("", "_blank");
+      if (!w) throw new Error("Popup blocked — allow popups for nocase.org and try again.");
+      w.document.write(html);
+      w.document.close();
+      if (typeof showToast === "function") showToast("Packet compiled — use Print / Save as PDF in the new tab");
+    } catch (e) {
+      if (typeof showToast === "function") showToast("Packet failed: " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Compile attorney packet";
+    }
+  }
+
+  function init() { document.getElementById("rdyPacketBtn")?.addEventListener("click", compilePacket); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 
