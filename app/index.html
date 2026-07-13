@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>NoCase — Workspace</title>
+<link rel="manifest" href="/app/manifest.json">
+<meta name="theme-color" content="#0e0e0e">
+<link rel="apple-touch-icon" href="/app/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500;1,600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +17,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <!-- Tesseract.js for OCR on image-based PDFs (loads worker on first use) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+<!-- JSZip for whole-case export (critical on mobile where the case lives in browser storage) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
     --ink: #0e0e0e; --ink-soft: #3a3a3a; --ink-muted: #7a7a7a;
@@ -231,6 +236,29 @@
   .obj-res-detail { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.45; }
   .obj-res-detail code { font-size: 0.72rem; }
 
+  /* Mobile layout — single column, horizontal nav, docs behind the Documents tab */
+  @media (max-width: 768px) {
+    .workspace { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .sidebar { display: flex; flex-direction: row; align-items: center; gap: 0.5rem; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--rule); padding: 0.4rem 0.6rem; -webkit-overflow-scrolling: touch; }
+    .sidebar h3 { display: none; }
+    .sidebar nav { display: flex; gap: 0.15rem; }
+    .sidebar nav a { white-space: nowrap; margin-bottom: 0; padding: 0.35rem 0.6rem; }
+    .case-card { display: none; }
+    .docs-col { display: none; border-right: none; }
+    .workspace.show-docs .docs-col { display: flex; }
+    .workspace.show-docs .chat-col { display: none; }
+    .stepper { padding: 0.45rem 0.7rem; gap: 0.5rem; }
+    .stepper-steps { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .step { padding: 0.22rem 0.5rem; font-size: 0.7rem; }
+    .step .num { width: 15px; height: 15px; font-size: 0.58rem; }
+    .stepper-next button { padding: 0.35rem 0.7rem; font-size: 0.72rem; }
+    .app-header { padding: 0.55rem 0.8rem; }
+    .chat-head .actions { flex-wrap: wrap; }
+    .brief-body, .obj-body { padding: 1rem 0.9rem; }
+    .composer-foot span:first-child { display: none; }
+    .onboarding-card { padding: 1.8rem 1.4rem; }
+  }
+
   /* Readiness tab */
   .rdy-hero { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1.4rem 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; }
   .rdy-dial { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; flex-shrink: 0; color: white; }
@@ -436,6 +464,18 @@ const docTextCache = new Map();        // docName → extracted text (in-memory 
 /* ---------- Browser support ---------- */
 function browserSupportsFS() {
   return typeof window.showDirectoryPicker === 'function';
+}
+// OPFS (Origin Private File System) — the mobile fallback. Same handle API
+// as showDirectoryPicker, but the case lives in browser-private storage
+// instead of a user-visible folder. "Export case" is the way data gets out.
+function supportsOPFS() {
+  return !!(navigator.storage && typeof navigator.storage.getDirectory === 'function');
+}
+async function opfsCaseFolder() {
+  const root = await navigator.storage.getDirectory();
+  const handle = await root.getDirectoryHandle('nocase-case', { create: true });
+  try { await navigator.storage.persist(); } catch {} // ask browser not to evict
+  return handle;
 }
 
 /* ---------- IndexedDB for handle ---------- */
@@ -937,21 +977,41 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 /* ---------- Folder lifecycle ---------- */
 async function pickFolder() {
-  if (!browserSupportsFS()) {
-    document.getElementById('browserWarn').style.display = 'block';
+  if (browserSupportsFS()) {
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      folderHandle = handle;
+      await idbSet(CONFIG.folderHandleKey, handle);
+      await initWorkspace();
+    } catch (e) {
+      if (e.name !== 'AbortError') showToast('Could not access folder: ' + e.message);
+    }
     return;
   }
-  try {
-    const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
-    folderHandle = handle;
-    await idbSet(CONFIG.folderHandleKey, handle);
-    await initWorkspace();
-  } catch (e) {
-    if (e.name !== 'AbortError') showToast('Could not access folder: ' + e.message);
+  if (supportsOPFS()) {
+    try {
+      folderHandle = await opfsCaseFolder();
+      window.__ncOPFS = true;
+      localStorage.setItem('ncOpfsCase', '1');
+      await initWorkspace();
+    } catch (e) {
+      showToast('Could not open device storage: ' + e.message);
+    }
+    return;
   }
+  document.getElementById('browserWarn').style.display = 'block';
 }
 
 async function tryRestoreFolder() {
+  // Mobile / OPFS mode: no permission dance needed, reopen directly.
+  if (!browserSupportsFS() && supportsOPFS() && localStorage.getItem('ncOpfsCase')) {
+    try {
+      folderHandle = await opfsCaseFolder();
+      window.__ncOPFS = true;
+      await initWorkspace();
+      return true;
+    } catch { return false; }
+  }
   const handle = await idbGet(CONFIG.folderHandleKey);
   if (!handle) return false;
   const opts = { mode: 'readwrite' };
@@ -993,8 +1053,13 @@ async function initWorkspace() {
   renderAttachments();
   document.getElementById('onboarding').classList.add('hidden');
   document.getElementById('workspace').classList.remove('hidden');
-  document.getElementById('folderStatus').innerHTML = `<span class="pill ok"><span class="dot"></span>Folder linked · ${folderHandle.name}</span>`;
-  document.getElementById('folderInfo').innerHTML = `linked: <code>${escapeHtml(folderHandle.name)}/</code>`;
+  const folderLabel = window.__ncOPFS ? 'this device' : folderHandle.name;
+  document.getElementById('folderStatus').innerHTML = `<span class="pill ok"><span class="dot"></span>${window.__ncOPFS ? 'Case stored on this device' : 'Folder linked · ' + escapeHtml(folderLabel)}</span>`;
+  document.getElementById('folderInfo').innerHTML = `linked: <code>${escapeHtml(folderLabel)}/</code>`;
+  // Bridge for intake.js (it can't pick a folder on mobile) and hide the
+  // directory-import button where showDirectoryPicker doesn't exist.
+  window.__nci_folderHandle = folderHandle;
+  if (!browserSupportsFS()) { const b = document.getElementById('bulkAddBtn'); if (b) b.style.display = 'none'; }
   renderCaseTypePill();
 
   // Auto-fire law-firm intake greeting on first chat in this case folder.
@@ -1126,20 +1191,52 @@ document.getElementById('runIntakeBtn').addEventListener('click', async () => {
   await runIntake();
 });
 
+async function addDirToZip(zipDir, dirHandle) {
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'file') {
+      zipDir.file(name, await handle.getFile());
+    } else if (handle.kind === 'directory') {
+      await addDirToZip(zipDir.folder(name), handle);
+    }
+  }
+}
+
 document.getElementById('exportBtn').addEventListener('click', async () => {
-  const docs = await listDocuments();
-  const bundle = {
-    case: caseState,
-    chat: chatLog,
-    documents: docs.map(d => ({ name: d.name, size: d.size, hash: d.meta?.sha256 })),
-    exportedAt: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `${caseState.caseId}-export.json`; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  showToast('Exported case as JSON');
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  try {
+    if (typeof JSZip === 'function') {
+      // Full-fidelity export: the entire case folder (documents, sidecars,
+      // brief, objections, chat) as a zip the user owns outright.
+      const zip = new JSZip();
+      await addDirToZip(zip, folderHandle);
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${(caseState.caseId || 'case')}-export.zip`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      showToast('Exported full case as zip');
+    } else {
+      // JSZip failed to load — fall back to the JSON manifest export
+      const docs = await listDocuments();
+      const bundle = {
+        case: caseState,
+        chat: chatLog,
+        documents: docs.map(d => ({ name: d.name, size: d.size, hash: d.meta?.sha256 })),
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${caseState.caseId}-export.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('Exported case manifest as JSON');
+    }
+  } catch (e) {
+    showToast('Export failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 function showToast(msg) {
@@ -1152,8 +1249,20 @@ function showToast(msg) {
 /* ---------- Boot ---------- */
 (async () => {
   if (!browserSupportsFS()) {
-    document.getElementById('browserWarn').style.display = 'block';
-    return;
+    if (!supportsOPFS()) {
+      document.getElementById('browserWarn').style.display = 'block';
+      return;
+    }
+    // Mobile mode: rewrite onboarding copy — there's no folder to pick.
+    const card = document.querySelector('.onboarding-card');
+    if (card) {
+      card.querySelector('h1').innerHTML = 'Start your <span class="accent">case file.</span>';
+      card.querySelector('p').textContent = 'Your case is stored privately on this device — nothing touches our servers except the snippets needed to answer your questions. Add documents from your Files, Photos, or email attachments. Use "Export case" anytime to download everything as a zip you own.';
+      const btn = document.getElementById('pickFolderBtn');
+      if (btn) btn.textContent = 'Start my case file';
+      const fine = card.querySelector('.onboarding-fine');
+      if (fine) fine.innerHTML = 'Tip: export your texts and emails to PDF or screenshots, save them to Files or Photos, then add them here with <strong>+ File</strong>. Everything is time-stamped and fingerprinted as it comes in.';
+    }
   }
   await tryRestoreFolder();
 })();
@@ -1170,9 +1279,9 @@ function showToast(msg) {
   function enter(){ const b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); b.innerHTML=""; const ta=document.createElement("textarea"); ta.className="brief-edit"; ta.value=cur; ta.id="briefEditArea"; b.appendChild(ta); b.style.padding="0"; e.textContent="Save"; r.disabled=true; edit=true; setTimeout(()=>ta.focus(),0); }
   async function save(){ const ta=document.getElementById("briefEditArea"),b=document.getElementById("briefBody"),e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(!ta) return; const nt=ta.value; e.disabled=true; try{ await writeBrief(nt); cur=nt; b.style.padding=""; e.textContent="Edit"; r.disabled=false; edit=false; await load(); if(typeof showToast==="function") showToast("Brief saved"); }catch(x){ alert("Save failed: "+x.message); e.disabled=false; } }
   async function refresh(){ const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"),b=document.getElementById("briefBody"); if(!(window.NoCaseIntake&&window.NoCaseIntake.regenerateBrief)){ alert("Brief generator not loaded. Reload page."); return;} r.disabled=true; e.disabled=true; r.textContent="Refreshing… (30-60s)"; b.innerHTML='<div class="brief-empty">Regenerating brief from current evidence…<br/><small>Calls Claude Opus 4.7 (30-60s).</small></div>'; try{ await window.NoCaseIntake.regenerateBrief(); await load(); if(window.refreshStepper) window.refreshStepper(); }catch(x){ alert("Refresh failed: "+x.message);} finally{ r.textContent="Refresh from evidence"; r.disabled=false; } }
-  function sw(n){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); if(n==="readiness"&&window.rdyLoad) window.rdyLoad(); }
+  function sw(n){ document.getElementById("workspace")?.classList.remove("show-docs"); document.querySelectorAll("nav a[data-tab]").forEach(a=>a.classList.toggle("active",a.getAttribute("data-tab")===n)); document.querySelectorAll(".tab-pane").forEach(p=>{ const m=p.getAttribute("data-pane")===n; if(m) p.removeAttribute("hidden"); else p.setAttribute("hidden",""); }); if(n==="brief") load(); if(n==="objections") objLoad(); if(n==="readiness"&&window.rdyLoad) window.rdyLoad(); }
   window.__ncSwitchTab = sw;
-  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections"||t==="readiness") sw(t); else if(t==="documents") { sw("chat"); /* docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
+  function init(){ document.querySelectorAll("nav a[data-tab]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); const t=a.getAttribute("data-tab"); if(t==="chat"||t==="brief"||t==="objections"||t==="readiness") sw(t); else if(t==="documents") { if(window.matchMedia("(max-width: 768px)").matches){ sw("chat"); const ws=document.getElementById("workspace"); ws.classList.add("show-docs"); document.querySelectorAll("nav a[data-tab]").forEach(x=>x.classList.toggle("active",x.getAttribute("data-tab")==="documents")); } else sw("chat"); /* desktop: docs col always visible */ } else if(typeof showToast==="function") showToast("Coming soon: "+t); })); const e=document.getElementById("briefEditBtn"),r=document.getElementById("briefRefreshBtn"); if(e) e.addEventListener("click",()=>{ if(edit) save(); else enter(); }); if(r) r.addEventListener("click",refresh); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
 })();
 

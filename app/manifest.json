@@ -1,0 +1,22 @@
+{
+  "name": "NoCase — Legal Case Workspace",
+  "short_name": "NoCase",
+  "description": "Local-first legal case preparation. Your evidence, your brief, your case — on your device.",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#f5f2ed",
+  "theme_color": "#0e0e0e",
+  "icons": [
+    {
+      "src": "/app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

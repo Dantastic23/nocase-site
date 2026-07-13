@@ -837,6 +837,21 @@
     const changeBtn = document.getElementById('nci-change-folder');
     const onPick = async () => {
       if (typeof window.showDirectoryPicker !== 'function') {
+        // Mobile fallback: OPFS — the case lives in browser-private storage
+        // on this device (same handle API; "Export case" gets the data out).
+        if (navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+          try {
+            const root = await navigator.storage.getDirectory();
+            const handle = await root.getDirectoryHandle('nocase-case', { create: true });
+            try { await navigator.storage.persist(); } catch {}
+            window.__nci_folderHandle = handle;
+            localStorage.setItem('ncOpfsCase', '1');
+            renderCurrentStep();
+          } catch (e) {
+            alert('Could not open device storage: ' + e.message);
+          }
+          return;
+        }
         alert('Your browser doesn\'t support folder access. Use Chrome, Edge, Brave, or Arc.');
         return;
       }
