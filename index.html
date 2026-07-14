@@ -22,6 +22,12 @@
     --gold-light: #fdf7e8;
     --green: #1a7a4a;
     --green-light: #eaf5f0;
+    /* Verdict colours for the DARK hero. The base --green/--gold/--red are tuned for
+       ink-on-paper and go muddy to unreadable against the courtroom background, so the
+       headline verdict states use these instead. */
+    --green-bright: #35d08a;
+    --gold-bright:  #e8c877;
+    --red-bright:   #ff7b6b;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -106,6 +112,11 @@
   .nav-cta:hover { opacity: 0.85 !important; }
 
   /* HERO */
+  /* ── HERO: the courtroom ────────────────────────────────────────────────
+     Dark, cinematic. The scene behind the headline is a rendered plate
+     (assets/hero-courtroom.jpg), served LOCALLY — the site is a static upload
+     with a strict no-external-requests posture, so the render is committed
+     alongside index.html and never hotlinked. */
   .hero {
     min-height: 100vh;
     display: flex; flex-direction: column;
@@ -114,16 +125,81 @@
     text-align: center;
     position: relative;
     overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 8%, #1c1c22 0%, #121216 45%, #0b0b0e 100%);
+    color: var(--paper);
   }
 
+  /* Faint architectural grid — now reads as courtroom panelling, not graph paper. */
   .hero-grid { pointer-events: none;
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(to right, var(--rule) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.4;
+      linear-gradient(to right, rgba(245,242,237,0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(245,242,237,0.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 100%);
+    opacity: 0.9;
   }
+
+  /* The hero is much taller than the viewport (headline + preview cards), so the scene
+     is anchored to the TOP and sized as a fraction of the section — anchoring it to the
+     bottom parks the whole courtroom below the fold where nobody sees it. It sits
+     behind the headline and dissolves at both edges. */
+  .hero-scene {
+    pointer-events: none;
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    /* aspect-ratio MATCHES the plate (hero-courtroom.jpg is 2400x1200) on purpose:
+       box and image at the same 2:1, so object-fit: cover has nothing to crop and the
+       full courtroom survives at every width. Give the box its own height instead and
+       a tall phone viewport guillotines the scene — you get a floating gavel and no
+       advocates. If you re-render the plate, keep it 2:1 or change both together. */
+    width: min(1500px, 145%);
+    aspect-ratio: 2 / 1;
+    z-index: 0;
+    opacity: 0.9;
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 62%, transparent 97%);
+  }
+  /* The box is 145% wide and centred, so .hero's overflow:hidden trims ~15% off each
+     flank at 375px. The plate is composed for that: both advocates sit inside the
+     middle ~70%, and the extreme edges are empty shadow that is safe to lose. Do not
+     re-crop the plate tighter — it eats the margin that makes the mobile crop work. */
+  .hero-art { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+  /* Vignette: sink the art behind the headline without dimming the whole room. The
+     flanks (the two advocates) stay lit; the centre column, where the type lives,
+     goes almost to black. Without this the gavel lands on top of "a case." */
+  .hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(58% 40% at 50% 36%,
+      rgba(11,11,14,0.90) 0%, rgba(11,11,14,0.72) 45%, rgba(11,11,14,0) 100%);
+  }
+
+  /* Everything above the art. */
+  .hero > *:not(.hero-scene):not(.hero-grid) { position: relative; z-index: 1; }
+
+  /* Hero copy, inverted for the dark room. */
+  .hero .hero-headline { color: var(--paper); text-shadow: 0 2px 40px rgba(0,0,0,0.5); }
+  .hero .hero-headline em { color: var(--gold); }
+
+  /* Verdict states. The whole headline takes the colour, em included — a green "You"
+     next to a gold "do" just reads as a rendering bug. */
+  .hero .hero-headline.verdict-good,  .hero .hero-headline.verdict-good em  { color: var(--green-bright); }
+  .hero .hero-headline.verdict-mixed, .hero .hero-headline.verdict-mixed em { color: var(--gold-bright); }
+  .hero .hero-headline.verdict-bad,   .hero .hero-headline.verdict-bad em   { color: var(--red-bright); }
+  .hero .hero-sub { color: #7ea2ff; }
+  .hero .hero-desc { color: rgba(245,242,237,0.68); }
+  .hero .hero-badge {
+    background: rgba(245,242,237,0.08);
+    color: rgba(245,242,237,0.9);
+    border: 1px solid rgba(245,242,237,0.14);
+    backdrop-filter: blur(6px);
+  }
+  .hero .btn-primary { background: var(--paper); color: var(--ink); }
+  .hero .btn-primary:hover { box-shadow: 0 8px 30px rgba(184,146,42,0.35); }
 
   .hero-badge {
     display: inline-flex; align-items: center; gap: 8px;
@@ -603,7 +679,37 @@
   }
 
   /* ATTORNEY SECTION */
-  .attorney-section { background: var(--paper-dark); }
+  /* Was a light section. It now carries the office plate (assets/office-night.jpg,
+     local — same no-external-requests rule as the hero), so it inverts to dark like
+     .privacy-section. The scrim is doing contrast work, not decoration: the section
+     text below sits directly on the photo. Lighten it and the headline stops passing
+     contrast against the lamp's hotspot. The white step cards are self-contained and
+     read fine on dark, so they are deliberately left alone. */
+  /* NB: no `color: var(--paper)` on the section itself. The white step cards and the
+     directory CTA sit inside it, and their titles carry no explicit colour — they
+     inherit. Inverting the section wholesale turns those into white-on-white and the
+     card headings vanish. Colour the section-level text explicitly instead. */
+  .attorney-section {
+    position: relative;
+    background: var(--ink);
+    overflow: hidden;
+  }
+  .attorney-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(14,14,14,0.74), rgba(14,14,14,0.88)),
+      url('assets/office-night.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+  .attorney-section > * { position: relative; z-index: 1; }
+  .attorney-section .section-label    { color: var(--gold); }
+  .attorney-section .section-headline { color: var(--paper); }
+  .attorney-section .section-sub      { color: rgba(245,242,237,0.72); }
+  .attorney-section .attorney-arrow   { color: rgba(245,242,237,0.45); }
 
   .attorney-flow {
     display: flex; align-items: center; gap: 0;
@@ -725,6 +831,21 @@
     .nav-links { display: none; }
     .hero { padding: 100px 1.5rem 60px; }
     .courtroom-preview { grid-template-columns: 1fr; }
+    /* The results grid carries its 3-up columns as an inline style, so it needs
+       !important to stack. Three ~110px columns on a phone is unreadable. */
+    .nc-courtroom-grid { grid-template-columns: 1fr !important; }
+
+    /* The old inline-SVG scene was zoomed to 230% here because at 145% it collapsed
+       into a thin band of noise. The rendered plate must NOT be: 230% of a 375px
+       viewport is an 863px box, and .hero's overflow:hidden would show only the
+       middle ~43% — the bench and gavel, with both advocates cropped clean off.
+       145% keeps the visible window at ~70%, which is what the plate is composed
+       for. Raise this and you lose the two advocates on phones. */
+    .hero-scene { width: 145%; top: 4%; opacity: 0.75; }
+    .hero::after {
+      background: radial-gradient(75% 34% at 50% 30%,
+        rgba(11,11,14,0.92) 0%, rgba(11,11,14,0.7) 50%, rgba(11,11,14,0) 100%);
+    }
     .privacy-grid { grid-template-columns: 1fr; gap: 2rem; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
     .footer-bottom { flex-direction: column; }
@@ -751,13 +872,19 @@
     <li><a href="#attorneys">For attorneys</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#legal">Legal</a></li>
-    <li><a href="#app" class="nav-cta">Start your case</a></li>
+    <li><a href="/app/" class="nav-cta">Start your case</a></li>
   </ul>
 </nav>
 
 <!-- HERO -->
 <section class="hero" id="top">
   <div class="hero-grid"></div>
+
+  <!-- Courtroom. Decorative only: aria-hidden, no text, no external requests. -->
+  <div class="hero-scene" aria-hidden="true">
+    <img class="hero-art" src="assets/hero-courtroom.jpg" alt="" width="2400" height="1200" decoding="async" fetchpriority="high">
+  </div>
+
   <div class="hero-badge">
     <div class="hero-badge-dot"></div>
     AI-powered legal intelligence &middot; Powered by Benchmark
@@ -844,7 +971,7 @@
   <div id="ncTimer" style="display:none;font-size:12px;color:var(--ink-muted);text-align:center;margin-top:0.75rem;">Analyzing &mdash; pulling real court opinions from CourtListener and Case.law...</div>
 
   <div id="ncCourtroom" style="display:none;width:100%;max-width:900px;margin:1.5rem auto 0;">
-    <div style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;">
+    <div class="nc-courtroom-grid" style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;">
       <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--red);border-radius:10px;overflow:hidden;">
         <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
           <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);" id="ncProsLabel">PROSECUTION</span>
@@ -881,6 +1008,14 @@
 function ncShowSkeleton(id) {
   const el = document.getElementById(id);
   el.innerHTML = [44,60,52,48].map(h => `<div style="height:${h}px;background:linear-gradient(90deg,var(--paper) 25%,var(--paper-dark) 50%,var(--paper) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;margin-bottom:8px;"></div>`).join('');
+}
+// The patch script's escapeHtml() is scoped inside its IIFE, so it doesn't exist on
+// this path -- which is the exact path that runs when the patch fails to load. Model
+// output quotes the user's own case facts back, and it lands in innerHTML below.
+function ncEscape(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
 }
 function ncParseArgs(text) {
   const lines = text.split('\n').filter(l => l.trim().length > 40);
@@ -920,19 +1055,15 @@ async function ncRunAnalysis() {
     const [pd, dd] = await Promise.all([pr.json(), dr.json()]);
     const pt = pd.result || pd.body || ''; const dt = dd.result || dd.body || '';
     const pArgs = ncParseArgs(pt); const dArgs = ncParseArgs(dt);
-    document.getElementById('ncProsBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener &middot; Case.law</div>` + pArgs.map((a,i)=>`<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--red);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
-    document.getElementById('ncDefBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener &middot; Case.law</div>` + dArgs.map((a,i)=>`<div style="background:var(--blue-light);border-left:3px solid var(--blue);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${a}</div></div>`).join('');
-    const score = Math.min(95, Math.max(35, Math.round(55 + (pt.length - dt.length) / 500)));
-    let label, color, bg;
-    if (score >= 70) { label='Prosecution Favored'; color='var(--red)'; bg='var(--red-light)'; }
-    else if (score >= 50) { label='Contested &mdash; Mixed Claims'; color='var(--gold)'; bg='var(--gold-light)'; }
-    else { label='Defense Favored'; color='var(--blue)'; bg='var(--blue-light)'; }
-    document.getElementById('ncJudgeBody').innerHTML = `<div style="background:${bg};border-radius:8px;padding:0.875rem;margin-bottom:10px;text-align:center;"><div style="font-size:13px;font-weight:500;color:${color};margin-bottom:8px;">${label}</div><div style="height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden;margin-bottom:5px;"><div id="ncFill" style="height:100%;width:0%;background:${color};border-radius:3px;transition:width 1.5s ease;"></div></div><div style="font-size:11px;color:var(--ink-muted);">Confidence: ${score}%</div></div><div style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px;">Based on your facts and verified case law, the ${score>=50?'prosecution':'defense'} presents the stronger initial position.</div><button onclick="alert('Attorney referral coming soon. Email hello@benchmark.com.')" style="width:100%;padding:8px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Find me a lawyer &rarr;</button>`;
-    setTimeout(()=>{ const f=document.getElementById('ncFill'); if(f) f.style.width=score+'%'; },100);
-    const headline = document.getElementById('mainHeadline'); const sub = document.getElementById('mainSub');
-    if (score >= 60) { headline.innerHTML='You <em>do</em> have<br>a case.'; headline.style.color='var(--green)'; sub.textContent='Benchmark found a viable case. Review the analysis and connect with an attorney.'; }
-    else if (score >= 40) { headline.innerHTML='You might have<br><em>a case.</em>'; headline.style.color='var(--gold)'; sub.textContent='The analysis is mixed. More evidence could strengthen your position.'; }
-    else { headline.innerHTML="You don't have<br><em>a case.</em>"; sub.textContent='The analysis does not favor your position.'; }
+    document.getElementById('ncProsBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener &middot; Case.law</div>` + pArgs.map((a,i)=>`<div style="background:var(--red-light);border-left:3px solid var(--red);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--red);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${ncEscape(a)}</div></div>`).join('');
+    document.getElementById('ncDefBody').innerHTML = `<div style="background:var(--paper-dark);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:10px;font-size:11px;color:var(--ink-muted);">Sources: CourtListener &middot; Case.law</div>` + dArgs.map((a,i)=>`<div style="background:var(--blue-light);border-left:3px solid var(--blue);border-radius:4px;padding:0.625rem 0.75rem;margin-bottom:7px;"><div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:3px;text-transform:uppercase;">Argument ${i+1}</div><div style="font-size:13px;line-height:1.55;color:var(--ink-soft);">${ncEscape(a)}</div></div>`).join('');
+    // No verdict on this path. This is the degraded fallback that only runs when
+    // nocase-v2.3-patch.js fails to load, so there is no judge_verdict call to score
+    // from. It must NOT invent one: the old code derived "Confidence: N%" from
+    // (pt.length - dt.length) / 500 -- i.e. whichever side the model wrote more words
+    // about -- and used it to swap the hero headline to "You do have a case." Say
+    // nothing rather than guess. Leave the hero headline alone.
+    document.getElementById('ncJudgeBody').innerHTML = '<div style="padding:0.875rem;background:var(--paper-dark);border-radius:8px;font-size:13px;color:var(--ink-soft);line-height:1.6;">Verdict unavailable &mdash; the analysis engine didn\'t fully load. The arguments for each side are shown above; the weighing of them is not. <a href="#" onclick="location.reload();return false;" style="color:var(--ink);">Reload to try again</a>, or email hello@benchmark.com.</div>';
   } catch(e) {
     document.getElementById('ncProsBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
     document.getElementById('ncDefBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
@@ -1119,7 +1250,10 @@ async function ncRunAnalysis() {
         <div class="attorney-step-desc">Reply to accept. NoCase connects you with the client. Referral fee of $150&ndash;$300 applies only upon acceptance. Nothing owed if you decline.</div>
       </div>
       <div class="attorney-arrow">&rarr;</div>
-      <div class="attorney-step" style="background:#0e0e0e;color:white;border-color:#333;">
+      <!-- Accent card. Was #0e0e0e for contrast against the old light section; the
+           section is now var(--ink) = #0e0e0e, so that exact value dissolves into the
+           background. Lifted two shades + gold border to stay the "special" card. -->
+      <div class="attorney-step" style="background:#1a1a20;color:white;border-color:rgba(184,146,42,0.55);">
         <div class="attorney-step-num" style="opacity:0.5;">Step 5</div>
         <div class="attorney-step-title" style="color:white;">Verified billing</div>
         <div class="attorney-step-desc" style="color:rgba(255,255,255,0.7);">Blockchain time records provide immutable proof of every hour spent on the case &mdash; verifiable by client, eliminating billing disputes.</div>
@@ -1349,7 +1483,7 @@ async function ncRunAnalysis() {
   <div class="section-inner">
     <h2 class="section-headline reveal" style="color:var(--paper);margin:0 auto 1rem;">Ready to find out<br><em>if you have a case?</em></h2>
     <p class="reveal" style="color:rgba(245,242,237,0.65);font-size:16px;max-width:460px;margin:0 auto 2.5rem;">Start on NoCase. Upload your evidence. Let the AI argue both sides. When you have a case &mdash; Benchmark connects you with the right attorney.</p>
-    <a href="#app" class="btn-primary reveal" style="background:var(--paper);color:var(--ink);font-size:16px;padding:16px 40px;">Start your case &mdash; free</a>
+    <a href="/app/" class="btn-primary reveal" style="background:var(--paper);color:var(--ink);font-size:16px;padding:16px 40px;">Start your case &mdash; free</a>
     <p class="reveal" style="margin-top:1.5rem;font-size:12px;color:rgba(245,242,237,0.35);">Benchmark provides legal information only. Not a law firm. Not legal advice. Not a substitute for a licensed attorney.</p>
   </div>
 </section>
@@ -1372,7 +1506,7 @@ async function ncRunAnalysis() {
       <ul class="footer-links">
         <li><a href="#how">How it works</a></li>
         <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#app">Start a case</a></li>
+        <li><a href="/app/">Start a case</a></li>
         <li><a href="#attorneys">For attorneys</a></li>
       </ul>
     </div>
