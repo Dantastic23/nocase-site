@@ -716,7 +716,18 @@
     margin-top: 3rem;
     overflow-x: auto;
     padding-bottom: 1rem;
+    /* The 5 cards are ~1510px in an 1100px container — 400px is ALWAYS hidden, even
+       on desktop. Without a cue, the clipped Step 5 card reads as a rendering bug
+       (macOS overlay scrollbars are invisible until you scroll). The mask dissolves
+       the cut edge so it reads as "more this way", and the styled scrollbar is a
+       persistent affordance. Cost: the last card dims slightly at full scroll. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245,242,237,0.3) transparent;
   }
+  .attorney-flow::-webkit-scrollbar { height: 8px; }
+  .attorney-flow::-webkit-scrollbar-thumb { background: rgba(245,242,237,0.3); border-radius: 4px; }
+  .attorney-flow::-webkit-scrollbar-track { background: rgba(245,242,237,0.08); border-radius: 4px; }
 
   .attorney-step {
     flex-shrink: 0;
@@ -789,7 +800,9 @@
   .footer-col-title { font-size: 11px; letter-spacing: 0.1em; opacity: 0.4; text-transform: uppercase; margin-bottom: 1rem; }
   .footer-links { list-style: none; }
   .footer-links li { margin-bottom: 0.75rem; }
-  .footer-links a { text-decoration: none; color: rgba(245,242,237,0.65); font-size: 14px; transition: color 0.2s; }
+  /* overflow-wrap: the contact emails are unbreakable ~190px strings; in any grid
+     column narrower than that they must wrap, not force the column wide. */
+  .footer-links a { text-decoration: none; color: rgba(245,242,237,0.65); font-size: 14px; transition: color 0.2s; overflow-wrap: anywhere; }
   .footer-links a:hover { color: var(--paper); }
 
   .footer-bottom {
@@ -849,6 +862,13 @@
     .privacy-grid { grid-template-columns: 1fr; gap: 2rem; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
     .footer-bottom { flex-direction: column; }
+  }
+
+  @media (max-width: 600px) {
+    /* Two 1fr columns floor at min-content, and the contact emails are unbreakable
+       ~190px strings: at 375px they forced the grid to 425px and the WHOLE PAGE
+       panned sideways 50px. One column holds every email intact on its own line. */
+    .footer-grid { grid-template-columns: 1fr; gap: 2.25rem; }
   }
 </style>
 </head>
