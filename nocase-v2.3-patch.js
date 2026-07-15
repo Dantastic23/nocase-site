@@ -453,7 +453,14 @@
         setHtml(id,
           `<p style="margin:0;font-size:13px;color:var(--ink-soft,#555);">Couldn\u2019t load the ${escapeHtml(label)}. <a href="#" class="nc-retry" style="color:inherit;">Try again</a>, or email hello@benchmark.com.</p>`);
         const node = $(id), link = node && node.querySelector('.nc-retry');
-        if (link) link.addEventListener('click', (ev) => { ev.preventDefault(); runAnalysis(); });
+        // A panel can fail fast (429) while the slow calls are still running; runAnalysis()
+        // early-returns on the analysisRunning guard, which made this link a silent no-op
+        // exactly when it's shown. Say what's happening instead of doing nothing.
+        if (link) link.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          if (analysisRunning) { link.textContent = 'Waiting for the other panels to finish…'; return; }
+          runAnalysis();
+        });
       };
 
       const jobs = [

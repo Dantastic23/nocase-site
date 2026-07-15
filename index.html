@@ -297,7 +297,9 @@
 
   .hero-disclaimer {
     font-size: 11px;
-    color: var(--ink-muted);
+    /* paper-alpha, not --ink-muted: this is the "not legal advice" notice sitting on
+       the near-black hero — #7a7a7a was ~4.3:1 at 11px, under the 4.5:1 small-text bar. */
+    color: rgba(245,242,237,0.6);
     max-width: 480px;
     line-height: 1.5;
     animation: fadeUp 0.6s ease 0.5s both;
@@ -913,7 +915,13 @@
   <p class="hero-sub">Prove us wrong.</p>
   <p class="hero-desc">Upload your documents. AI argues both sides simultaneously. A judge renders a live verdict. Know exactly where you stand before you spend a dollar on an attorney.</p>
 
-  <div style="font-size:11px;color:var(--ink-muted);letter-spacing:0.08em;margin-bottom:0.75rem;opacity:0.7;">REAL CASE &mdash; Aggregate Theft &middot; 221st Judicial District &middot; Montgomery County, TX</div>
+  <!-- On phones the nav links (and their Start-your-case CTA) are display:none, so
+       without this the first tappable path to /app/ was ~28 screens down. -->
+  <div class="hero-actions">
+    <a href="/app/" class="btn-primary">Start your case &mdash; free</a>
+  </div>
+
+  <div style="font-size:11px;color:rgba(245,242,237,0.55);letter-spacing:0.08em;margin-bottom:0.75rem;">REAL CASE &mdash; Aggregate Theft &middot; 221st Judicial District &middot; Montgomery County, TX</div>
   <div class="courtroom-preview">
     <div class="preview-panel">
       <div class="preview-header">
@@ -950,7 +958,7 @@
       </div>
     </div>
   </div>
-  <div style="font-size:11px;color:var(--ink-muted);text-align:center;margin-top:0.75rem;margin-bottom:-1rem;opacity:0.6;">Case No. 19-08-10929 &middot; Outcome confirmed &middot; AI verdict matched actual result</div>
+  <div style="font-size:11px;color:rgba(245,242,237,0.5);text-align:center;margin-top:0.75rem;margin-bottom:-1rem;">Case No. 19-08-10929 &middot; Outcome confirmed &middot; AI verdict matched actual result</div>
 
   <div id="liveInputSection" style="width:100%;max-width:680px;margin:1.5rem auto 0;text-align:left;">
     <div style="background:white;border:1px solid var(--rule);border-radius:12px;padding:1.5rem;">
@@ -988,7 +996,7 @@
     </div>
   </div>
 
-  <div id="ncTimer" style="display:none;font-size:12px;color:var(--ink-muted);text-align:center;margin-top:0.75rem;">Analyzing &mdash; pulling real court opinions from CourtListener and Case.law...</div>
+  <div id="ncTimer" style="display:none;font-size:12px;color:rgba(245,242,237,0.75);text-align:center;margin-top:0.75rem;">Analyzing &mdash; pulling real court opinions from CourtListener and Case.law...</div>
 
   <div id="ncCourtroom" style="display:none;width:100%;max-width:900px;margin:1.5rem auto 0;">
     <div class="nc-courtroom-grid" style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;">
@@ -1025,6 +1033,28 @@
 </style>
 
 <script>
+// Draft persistence for the case description. A stressed user types their whole
+// situation into this box; mobile Safari evicts backgrounded tabs and a reflex
+// refresh used to destroy it with no recovery. Inline here (not in the patch)
+// so the draft survives even when the patch script fails to load. Local-first:
+// the draft never leaves the device, same posture as the /app/ case store.
+(function () {
+  const KEY = 'ncCaseDraft';
+  const el = document.getElementById('caseDesc');
+  if (!el) return;
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved && !el.value) el.value = saved;
+  } catch (e) { /* storage unavailable (private mode) — typing still works */ }
+  let t;
+  el.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try { localStorage.setItem(KEY, el.value); } catch (e) {}
+    }, 400);
+  });
+})();
+
 function ncShowSkeleton(id) {
   const el = document.getElementById(id);
   el.innerHTML = [44,60,52,48].map(h => `<div style="height:${h}px;background:linear-gradient(90deg,var(--paper) 25%,var(--paper-dark) 50%,var(--paper) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;margin-bottom:8px;"></div>`).join('');
@@ -1083,7 +1113,7 @@ async function ncRunAnalysis() {
     // (pt.length - dt.length) / 500 -- i.e. whichever side the model wrote more words
     // about -- and used it to swap the hero headline to "You do have a case." Say
     // nothing rather than guess. Leave the hero headline alone.
-    document.getElementById('ncJudgeBody').innerHTML = '<div style="padding:0.875rem;background:var(--paper-dark);border-radius:8px;font-size:13px;color:var(--ink-soft);line-height:1.6;">Verdict unavailable &mdash; the analysis engine didn\'t fully load. The arguments for each side are shown above; the weighing of them is not. <a href="#" onclick="location.reload();return false;" style="color:var(--ink);">Reload to try again</a>, or email hello@benchmark.com.</div>';
+    document.getElementById('ncJudgeBody').innerHTML = '<div style="padding:0.875rem;background:var(--paper-dark);border-radius:8px;font-size:13px;color:var(--ink-soft);line-height:1.6;">Verdict unavailable &mdash; the analysis engine didn\'t fully load. The arguments for each side are shown above; the weighing of them is not. <a href="#" onclick="ncRunAnalysis();return false;" style="color:var(--ink);">Try again</a>, or email hello@benchmark.com.</div>';
   } catch(e) {
     document.getElementById('ncProsBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';
     document.getElementById('ncDefBody').innerHTML = '<div style="padding:0.5rem;font-size:13px;color:var(--ink-soft);">API Gateway connection pending. Contact hello@benchmark.com for a live demonstration.</div>';

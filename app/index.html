@@ -254,7 +254,11 @@
 
   /* Mobile layout — single column, horizontal nav, docs behind the Documents tab */
   @media (max-width: 768px) {
-    .workspace { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    /* minmax(0,1fr), not 1fr: a bare 1fr track floors at min-content, so one wide
+       child (the chat action row) forces the single column to ~580px and the whole
+       app pans sideways on a phone. minmax(0,1fr) lets the track actually shrink. */
+    .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
+    .chat-col, .docs-col { min-width: 0; }
     .sidebar { display: flex; flex-direction: row; align-items: center; gap: 0.5rem; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--rule); padding: 0.4rem 0.6rem; -webkit-overflow-scrolling: touch; }
     .sidebar h3 { display: none; }
     .sidebar nav { display: flex; gap: 0.15rem; }

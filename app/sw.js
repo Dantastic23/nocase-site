@@ -6,7 +6,7 @@
  * Bump CACHE on every deploy. Deploy here is a manual upload (see CLAUDE.md), so
  * nothing bumps this for you; a stale CACHE means users keep the old shell forever.
  */
-const CACHE = 'nocase-shell-v1';
+const CACHE = 'nocase-shell-v2';   // v2: mobile workspace grid fix in app/index.html
 
 const SHELL = [
   '/app/',
