@@ -1382,6 +1382,95 @@
   }
 
   // ==========================================================================
+  // normalizeImageForExtraction — phones produce formats the Lambda can't take
+  // (HEIC/HEIF from iPhone cameras, oversized 24MP JPEGs past API Gateway's
+  // 10MB cap). Convert ANY image to a downscaled JPEG in the browser before
+  // upload. IMPORTANT: this converts only the copy sent for OCR — the original
+  // file in the case folder is never modified; it's evidence.
+  // Decode order: createImageBitmap (Safari decodes HEIC natively — the iPhone
+  // path costs zero downloads) → heic2any from cdnjs (desktop Chrome, lazy,
+  // only when actually needed) → give up and let the caller fall through.
+  // ==========================================================================
+  const NCI_IMG_ANY = /\.(heic|heif|png|jpg|jpeg|gif|webp|bmp|tif|tiff|avif)$/i;
+  const NCI_IMG_SERVER_OK = /\.(png|jpg|jpeg|gif|webp)$/i;
+  const NCI_MAX_UPLOAD_BYTES = 6.5 * 1024 * 1024;  // base64 inflates ~4/3; keeps body under the 10MB API Gateway cap
+
+  // libheif-js, not heic2any: heic2any 0.0.4 ships a 2021 libheif that fails on
+  // current iPhone HEIC with ERR_LIBHEIF (verified against a real IMG_xxxx.HEIC).
+  // libheif-js 1.19 decodes it. ~2.4MB wasm, lazy-loaded ONLY on the
+  // Chrome-with-HEIC path — Safari/iOS never downloads it (native decode).
+  let __libheifLoading = null;
+  function loadLibheif() {
+    if (__libheifLoading) return __libheifLoading;
+    __libheifLoading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/libheif-js@1.19.8/libheif-wasm/libheif-bundle.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('libheif failed to load'));
+      document.head.appendChild(s);
+    }).then(() => {
+      // The bundle's global is an emscripten MODULE FACTORY, not a namespace:
+      // call it (async) to get the module that actually has HeifDecoder.
+      return typeof window.libheif === 'function' ? window.libheif() : window.libheif;
+    }).catch(e => { __libheifLoading = null; throw e; });
+    return __libheifLoading;
+  }
+
+  async function normalizeImageForExtraction(file) {
+    const isImage = NCI_IMG_ANY.test(file.name) || (file.type || '').startsWith('image/');
+    if (!isImage) return null;
+    // Already a format the Lambda accepts, and small enough → send untouched.
+    if (NCI_IMG_SERVER_OK.test(file.name) && file.size <= NCI_MAX_UPLOAD_BYTES) return null;
+
+    // 1) Decode. Safari (i.e. the iPhone user) decodes HEIC right here.
+    let bitmap = null;
+    try { bitmap = await createImageBitmap(file); } catch (e) { bitmap = null; }
+
+    // 2) Chrome/Edge can't decode HEIC — decode via libheif wasm, then canvas.
+    if (!bitmap && /\.(heic|heif)$/i.test(file.name)) {
+      try {
+        const libheif = await loadLibheif();
+        const decoder = new libheif.HeifDecoder();
+        const images = decoder.decode(await file.arrayBuffer());
+        if (images && images.length) {
+          const img = images[0];
+          const w = img.get_width(), h = img.get_height();
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const cctx = c.getContext('2d');
+          const imageData = cctx.createImageData(w, h);
+          await new Promise((resolve, reject) =>
+            img.display(imageData, (ok) => ok ? resolve() : reject(new Error('heif display failed'))));
+          cctx.putImageData(imageData, 0, 0);
+          bitmap = await createImageBitmap(c);
+          images.forEach(i => { try { i.free && i.free(); } catch (e) {} });
+        }
+      } catch (e) {
+        console.warn('[extract] HEIC conversion failed for', file.name, e);
+      }
+    }
+    if (!bitmap) return null;  // undecodable — caller keeps existing behavior
+
+    // 3) Downscale + re-encode. 2200px longest side is plenty for OCR.
+    const MAX_DIM = 2200;
+    const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close && bitmap.close();
+
+    let blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+    if (blob && blob.size > NCI_MAX_UPLOAD_BYTES) {
+      blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.6));
+    }
+    if (!blob) return null;
+    const stem = file.name.replace(/\.[^.]+$/, '') || 'image';
+    console.log('[extract] normalized', file.name, '→ jpeg', Math.round(blob.size / 1024) + 'KB');
+    return { blob, filename: stem + '.jpg', mimeType: 'image/jpeg' };
+  }
+
+  // ==========================================================================
   // Lambda fallback for extractText — when the browser's local extractors fail
   // (image-only PDFs, unusual DOCX structures, HEIC photos), send the file as
   // base64 to the Lambda's extract_text task, which hands it to Bedrock's
@@ -1402,11 +1491,16 @@
       // If local extraction yielded meaningful text, use it
       if (localChars >= 50) return localText;
       // 2) Fall back to Lambda extract_text — supports PDF/DOCX natively
-      // plus images. Skip for genuinely unsupported types (audio, video, archives).
-      const supportedExt = /\.(pdf|doc|docx|csv|xls|xlsx|html|htm|txt|md|png|jpg|jpeg|gif|webp)$/i;
-      if (!supportedExt.test(file.name)) return localText;
+      // plus images. Phone formats (HEIC/HEIF/TIFF/BMP/AVIF) and oversized
+      // photos are normalized to JPEG in-browser first; the Lambda never
+      // sees them raw. Skip only genuinely unsupported types (audio, video).
+      const supportedExt = /\.(pdf|doc|docx|csv|xls|xlsx|html|htm|txt|md|png|jpg|jpeg|gif|webp|heic|heif|bmp|tif|tiff|avif)$/i;
+      if (!supportedExt.test(file.name) && !(file.type || '').startsWith('image/')) return localText;
       try {
-        const buf = await file.arrayBuffer();
+        let sendFile = file, sendName = file.name, sendMime = file.type;
+        const norm = await normalizeImageForExtraction(file);
+        if (norm) { sendFile = norm.blob; sendName = norm.filename; sendMime = norm.mimeType; }
+        const buf = await sendFile.arrayBuffer();
         const bytes = new Uint8Array(buf);
         // Chunked btoa to avoid call-stack issues on larger files
         let bin = '';
@@ -1418,11 +1512,11 @@
         const API = (typeof CONFIG !== 'undefined' && CONFIG.apiBase)
           || (window.NC_CONFIG && window.NC_CONFIG.apiBase)
           || 'https://dxfdmuqx1a.execute-api.us-east-1.amazonaws.com/prod/analyze';
-        console.log('[extract] falling back to Lambda for', file.name, '(local got', localChars, 'chars)');
+        console.log('[extract] falling back to Lambda for', sendName, '(local got', localChars, 'chars)');
         const r = await fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task: 'extract_text', filename: file.name, base64, mimeType: file.type })
+          body: JSON.stringify({ task: 'extract_text', filename: sendName, base64, mimeType: sendMime })
         });
         if (!r.ok) throw new Error('http ' + r.status);
         const data = await r.json();
