@@ -579,11 +579,16 @@
           panelError('ncJudgeBody', 'verdict');
         }).finally(step),
 
-        callTask({ ...common, task: 'red_team_plaintiff' }).then(r => {
+        // Each column must hold the case FOR the role in its heading. The task names
+        // are historical: "red_team_plaintiff" just means the LEFT column (pair.initiator),
+        // "red_team_defendant" the RIGHT (pair.responder). Without argueFor the Lambda
+        // argues for whoever filed this claim, which is not always the initiator — a
+        // tenant's deposit claim rendered under LANDLORD. Needs Lambda >= 2026-09-21.
+        callTask({ ...common, task: 'red_team_plaintiff', argueFor: pair.initiator, argueAgainst: pair.responder }).then(r => {
           setHtml('ncProsBody', mdToHtml(r.result || ''));
         }).catch(e => { console.error(e); panelError('ncProsBody', pair.initiator + ' case'); }).finally(step),
 
-        callTask({ ...common, task: 'red_team_defendant' }).then(r => {
+        callTask({ ...common, task: 'red_team_defendant', argueFor: pair.responder, argueAgainst: pair.initiator }).then(r => {
           setHtml('ncDefBody', mdToHtml(r.result || ''));
         }).catch(e => { console.error(e); panelError('ncDefBody', pair.responder + ' case'); }).finally(step),
 
