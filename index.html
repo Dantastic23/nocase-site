@@ -180,13 +180,17 @@
   .legacy-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .legacy-pickers > div { margin-bottom: 14px; }
   .legacy-pickers select { width: 100%; font-family: var(--sans); font-size: 14px; color: var(--ink); padding: 9px 10px; border: 1px solid var(--rule); border-radius: 2px; background: #fbfaf5; }
-  #ncError { display: none; background: var(--red-light); border: 1px solid #e0b9b7; border-radius: 2px; padding: 10px 12px; font-size: 14px; color: var(--red); margin-bottom: 12px; }
+  /* #ncError, #ncTimer and #ncCourtroom are hidden by an INLINE display:none, never by
+     this stylesheet. nocase-v2.3-patch.js reveals them with style.display = '' (clear
+     the inline value). Hide them here as well and that clear falls through to this
+     rule: the analysis runs, the headline flips, and the result panels never appear. */
+  #ncError { background: var(--red-light); border: 1px solid #e0b9b7; border-radius: 2px; padding: 10px 12px; font-size: 14px; color: var(--red); margin-bottom: 12px; }
   #ncRunBtn { width: 100%; }
   #ncRunBtn:disabled { opacity: 0.7; cursor: default; }
   .sheet-foot { font-size: 12px; color: var(--ink-muted); margin-top: 10px; text-align: center; }
   .lobby-after { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; }
-  #ncTimer { display: none; font-size: 14px; color: var(--on-dark); text-align: center; margin-top: 20px; }
-  #ncCourtroom { display: none; width: 100%; margin: 24px auto 0; }
+  #ncTimer { font-size: 14px; color: var(--on-dark); text-align: center; margin-top: 20px; }
+  #ncCourtroom { width: 100%; margin: 24px auto 0; }
   .hero-disclaimer { font-size: 12px; line-height: 1.55; color: var(--on-dark-soft); max-width: 62em; margin: 28px auto 0; text-align: center; }
 
   /* One orchestrated load, then stillness. Nothing else on the page animates on
@@ -464,7 +468,7 @@
               </select>
             </div>
           </div>
-          <div id="ncError" role="alert"></div>
+          <div id="ncError" role="alert" style="display:none;"></div>
           <!-- Inline onclick is the deliberate fallback if the patch script fails to
                load (the patch strips it at runtime). Do not delete it as dead code. -->
           <button id="ncRunBtn" class="btn btn-lamp" onclick="ncRunAnalysis()">Analyze my case &mdash; free</button>
