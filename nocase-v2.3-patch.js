@@ -165,8 +165,11 @@
     let host = '';
     try { host = new URL(terms.url).hostname.replace(/^www\./, ''); } catch (e) {}
     const safeUrl = /^https:\/\//.test(terms.url || '') ? terms.url : '#';
+    // A date, not "just now": results are saved on the device and reopened for up to 30 days.
+    let when = 'the date of this analysis';
+    try { when = new Date(terms.fetchedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }); } catch (e) {}
     return `<div class="nc-terms"><h3>From ${escapeHtml(terms.company)}\u2019s ${escapeHtml(terms.doc)}</h3>` +
-      `<p class="nc-terms-note">Pulled from ${escapeHtml(host)} just now. This is the current version. The one in force when your dispute started may be different.</p>` +
+      `<p class="nc-terms-note">Pulled from ${escapeHtml(host)} on ${escapeHtml(when)}. That is the version in force on that date; the one in force when your dispute started may be different.</p>` +
       terms.clauses.map(c => `<blockquote><b>${escapeHtml(c.label)}</b>\u201c${escapeHtml(c.text)}\u201d</blockquote>`).join('') +
       `<p class="nc-terms-link"><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">Read the full agreement</a></p></div>`;
   }
