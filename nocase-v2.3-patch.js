@@ -565,7 +565,7 @@
           if (sub) {
             sub.textContent = insufficient
               ? 'The facts are evenly balanced. More evidence would tip it either way.'
-              : userPct >= 60 ? 'Benchmark found a viable case. Review the analysis and connect with an attorney.'
+              : userPct >= 60 ? 'Benchmark found a viable case. Review the analysis. If you want a lawyer, take this with you.'
               : userPct >= 40 ? 'The analysis is mixed. More evidence could strengthen your position.'
               : 'The analysis does not favour your position.';
           }
