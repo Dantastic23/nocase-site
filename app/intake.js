@@ -1350,10 +1350,25 @@
     // so they're not on window — but they ARE in the same script's scope,
     // and the host page already calls saveCaseState() etc. through name
     // resolution. We use a setInterval to grab them once they exist.
+    // The Lambda fallback for unreadable files (phone photos, scans) needs only
+    // extractText, which exists at page load. It used to be installed inside the
+    // folder bridge below, which gave up after 10s — so on a NEW case, where the
+    // person spends longer than that picking a folder, it was never installed and
+    // every photo was saved with no text (seen live 2026-09-21: three DUI photos,
+    // zero extract_text calls). Install it as soon as extractText exists.
+    const earlyFallback = setInterval(() => {
+      if (typeof extractText === 'function') {
+        clearInterval(earlyFallback);
+        window.extractText = extractText;
+        installLambdaExtractFallback();
+      }
+    }, 100);
+
+    // The folder, on the other hand, can take minutes (onboarding, permission
+    // prompt), so keep waiting — no cap. 200ms for the first 10s, then 1s.
     let attempts = 0;
-    const bridge = setInterval(() => {
+    const bridgeTick = () => {
       attempts++;
-      if (attempts > 50) { clearInterval(bridge); return; }
       // Try accessing the globals indirectly
       try {
         const haveState = typeof caseState !== 'undefined' && caseState;
@@ -1366,19 +1381,21 @@
           window.docTextCache = (typeof docTextCache !== 'undefined') ? docTextCache : window.docTextCache;
           window.saveCaseState = (typeof saveCaseState === 'function') ? saveCaseState : window.saveCaseState;
           window.showToast = (typeof showToast === 'function') ? showToast : window.showToast;
-          clearInterval(bridge);
 
           // Now that the bridge is established, wrap extractText with a server-side
           // fallback (so any file the browser can't read gets sent to Bedrock
           // multimodal) and kick off background re-extraction of any stale 0-char
           // documents that were added before the libraries worked properly.
-          installLambdaExtractFallback();
+          installLambdaExtractFallback();   // no-op if the early install already ran
           setTimeout(() => {
             reextractStaleDocuments(folderHandle).catch(e => console.warn('reextract sweep failed', e));
           }, 2500);
+          return;
         }
       } catch (e) { /* still loading */ }
-    }, 200);
+      setTimeout(bridgeTick, attempts < 50 ? 200 : 1000);
+    };
+    setTimeout(bridgeTick, 200);
   }
 
   // ==========================================================================

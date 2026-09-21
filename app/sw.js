@@ -6,7 +6,7 @@
  * Bump CACHE on every deploy. Deploy here is a manual upload (see CLAUDE.md), so
  * nothing bumps this for you; a stale CACHE means users keep the old shell forever.
  */
-const CACHE = 'nocase-shell-v4';   // v4: plain-language pick-a-folder screen (v3: in-browser HEIC/oversize image normalization in intake.js)
+const CACHE = 'nocase-shell-v5';   // v5: photo-extraction fallback installed at load, not after the folder opens (v4: pick-a-folder copy; v3: HEIC normalization)
 
 const SHELL = [
   '/app/',
