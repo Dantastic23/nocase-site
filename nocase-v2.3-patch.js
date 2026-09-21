@@ -158,6 +158,19 @@
     });
   }
 
+  // The agreement clauses the judge relied on. Text is the company's own, verbatim, and
+  // was verified server-side against the page it came from; it is escaped here anyway.
+  function termsBlockHtml(terms) {
+    if (!terms || !terms.clauses || !terms.clauses.length) return '';
+    let host = '';
+    try { host = new URL(terms.url).hostname.replace(/^www\./, ''); } catch (e) {}
+    const safeUrl = /^https:\/\//.test(terms.url || '') ? terms.url : '#';
+    return `<div class="nc-terms"><h3>From ${escapeHtml(terms.company)}\u2019s ${escapeHtml(terms.doc)}</h3>` +
+      `<p class="nc-terms-note">Pulled from ${escapeHtml(host)} just now. This is the current version. The one in force when your dispute started may be different.</p>` +
+      terms.clauses.map(c => `<blockquote><b>${escapeHtml(c.label)}</b>\u201c${escapeHtml(c.text)}\u201d</blockquote>`).join('') +
+      `<p class="nc-terms-link"><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">Read the full agreement</a></p></div>`;
+  }
+
   // The last analysis is kept ON THIS DEVICE only (same posture as the case-description
   // draft and the /app/ case folder): no account, nothing stored server-side. It answers
   // "if I leave this page do I lose it?" without a database.
@@ -325,6 +338,8 @@
       caseTypeId: null,
       userRole: null,
       facts: '',
+      terms: null,            // the named company's agreement clauses, if we found them
+      termsPromise: null,
     };
 
     // Try to locate the facts textarea. Likely ids/names; fall back to first <textarea>.
@@ -387,6 +402,23 @@
           `This looks like a <strong>${entry.label}</strong> case (${confPct}% confidence).<br>` +
           `You appear to be the <strong>${state.userRole}</strong>; the other side is the <strong>${otherRole}</strong>.` +
           (parsed.reasoning ? `<div style="margin-top:8px;font-size:13px;color:var(--ink-muted,#888);">${escapeHtml(humanize(parsed.reasoning))}</div>` : '');
+
+        // If the other side is a company we can pull terms for, fetch them NOW, while the
+        // person reads this card, so the analysis itself doesn't wait on it. The Lambda only
+        // looks the name up in its own table of official URLs; nothing here supplies a URL.
+        state.terms = null; state.termsPromise = null;
+        if (parsed.company) {
+          const forFacts = state.facts;
+          state.termsPromise = callTask({ task: 'company_terms', company: parsed.company, caseData: state.facts })
+            .then(r => {
+              if (!r || !r.result || !r.result.clauses || !r.result.clauses.length || forFacts !== state.facts) return;
+              state.terms = r.result;
+              const sum = $('ncConfirmSummary');
+              if (sum) sum.insertAdjacentHTML('beforeend',
+                `<div style="margin-top:8px;font-size:13px;color:var(--green,#1e5c45);font-weight:600;">We found ${escapeHtml(r.result.company)}\u2019s ${escapeHtml(r.result.doc)} and will read it against your facts.</div>`);
+            })
+            .catch(e => { console.warn('[nocase] company terms unavailable', e); });   // fine: analysis runs without them
+        }
 
         $('ncConfirmCaseType').value = state.caseTypeId;
         populateRoleSelect(state.caseTypeId, state.userRole);
@@ -466,7 +498,14 @@
       const timerId = setInterval(tick, 1000);
       const step = () => { done++; tick(); };
 
+      // Usually long finished. If the person clicked through fast, wait briefly rather than
+      // run the whole analysis blind to the contract; never more than 6s.
+      if (state.termsPromise && !state.terms) {
+        await Promise.race([state.termsPromise, new Promise(res => setTimeout(res, 6000))]);
+      }
       const common = {
+        company: state.terms ? state.terms.company : undefined,
+        termsClauses: state.terms ? state.terms.clauses.map(c => ({ key: c.key, text: c.text })) : undefined,
         caseData: state.facts,
         caseType: entry.label,
         caseTypeId: state.caseTypeId,
@@ -556,6 +595,7 @@
             `<div style="height:6px;background:var(--paper-dark,#eee);border-radius:3px;overflow:hidden;margin-bottom:12px;">` +
             `<div id="ncFill" data-pct="${userPct}" style="height:100%;width:0%;background:${barColor};border-radius:3px;transition:width 1.2s ease;"></div></div>` +
             mdToHtml(verdict.reasoning) +
+            termsBlockHtml(state.terms ? r.terms : null) +   // only when THIS run asked for a company's terms
             (verdict.next.length
               ? `<div class="nc-next"><h3>What to gather next</h3><ul>${verdict.next.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul></div>`
               : ''));
