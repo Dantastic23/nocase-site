@@ -429,12 +429,17 @@
       if (timerEl) timerEl.style.display = 'block';
       const startedAt = Date.now();
       let done = 0, failed = 0;
-      const TOTAL = 4;
+      // Follow-up questions belong to /app/, where the case is actually worked (Dan,
+      // 2026-09-21). The home page has no #ncQAList to show them in, so don't spend a
+      // model call on them — it also competed with the judge for the same rate limit.
+      // The call comes back by itself if a page ever provides #ncQAList again.
+      const wantQuestions = !!$('ncQAList');
+      const TOTAL = wantQuestions ? 4 : 3;
       const tick = () => {
         const secs = Math.round((Date.now() - startedAt) / 1000);
         const mm = Math.floor(secs / 60), ss = String(secs % 60).padStart(2, '0');
         if (timerEl) {
-          timerEl.textContent = `Analyzing \u2014 ${mm}:${ss} elapsed \u00b7 ${done} of ${TOTAL} done \u00b7 a full analysis usually takes 60\u201390 seconds. You can leave this open.`;
+          timerEl.textContent = `Analyzing \u2014 ${mm}:${ss} elapsed \u00b7 ${done} of ${TOTAL} done \u00b7 this usually takes 10\u201320 seconds.`;
         }
       };
       tick();
@@ -592,7 +597,7 @@
           setHtml('ncDefBody', mdToHtml(r.result || ''));
         }).catch(e => { console.error(e); panelError('ncDefBody', pair.responder + ' case'); }).finally(step),
 
-        callTask({ ...common, task: 'generate_questions' }).then(r => {
+        !wantQuestions ? null : callTask({ ...common, task: 'generate_questions' }).then(r => {
           const questions = parseQuestions(r.result || '');
           const qaList = $('ncQAList');
           if (qaList && questions.length) {
@@ -609,7 +614,7 @@
             if (qaCard) qaCard.style.display = '';
           }
         }).catch(e => { console.error(e); failed++; }).finally(step),
-      ];
+      ].filter(Boolean);
 
       const summaryF = $('ncLeadCaseSummary');
       if (summaryF) summaryF.value = state.facts;
