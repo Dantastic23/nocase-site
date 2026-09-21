@@ -190,16 +190,31 @@
   .sheet-foot { font-size: 12px; color: var(--ink-muted); margin-top: 10px; text-align: center; }
   .lobby-after { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; }
   #ncTimer { font-size: 14px; color: var(--on-dark); text-align: center; margin-top: 20px; }
-  #ncCourtroom { width: 100%; margin: 24px auto 0; }
+  #ncCourtroom { width: 100%; margin: 28px auto 0; }
+  /* Verdict first and full width, the two sides beneath it. The original three narrow
+     columns inside a 900px box left dead space either side while the reader squinted
+     at 280px of text (demo feedback, 2026-09-21). DOM order stays pros / judge / def
+     because the scripts address the panels by id; `order` does the visual move. */
+  .nc-courtroom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .nc-judge-panel { order: -1; grid-column: 1 / -1; }
+  #ncJudgeBody, #ncProsBody, #ncDefBody { min-height: 0 !important; }
+  .nc-jurisdiction, .nc-saved-note { font-size: 13px; color: var(--on-dark-soft); margin: 0 0 10px; }
+  .nc-saved-note { color: var(--buckram); }
+  .nc-saved-note a { color: inherit; }
+  .nc-next { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+  .nc-next h3 { margin-top: 0 !important; }
+  .nc-nextstep { margin-top: 14px; padding: 20px 22px; background: var(--paper); color: var(--ink); border: 1px solid #d8cfb9; border-radius: 2px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  #ncCourtroom .nc-nextstep h3 { font-family: var(--serif); font-size: 20px; margin: 0 0 4px; }   /* id needed: #ncCourtroom h3 sizes model markdown */
+  #ncCourtroom .nc-nextstep p { font-size: 15px; color: var(--ink-soft); max-width: 44em; margin: 0; }
   /* Results are paper, so they take ink. The page's text colour is light (rooms are
      dark) and #ncJudgeBody sets no colour of its own — it used to inherit the old
      page's dark ink. Without this the verdict renders near-white on a white panel:
      present in the DOM, invisible on screen. Same for anything the patch injects. */
-  #ncCourtroom, #ncConfirmCard, #ncQACard { color: var(--ink); }
+  #ncCourtroom .nc-courtroom-grid, #ncConfirmCard, #ncQACard { color: var(--ink); }
   /* The side panels hold model-written markdown (h1-h3, lists). The global reset
      zeroes list padding and leaves headings at browser size, so give them a scale
      that fits a 280px column. */
-  #ncJudgeBody { font-size: 14px; line-height: 1.6; }
+  #ncJudgeBody { font-size: 15px; line-height: 1.6; max-width: 60em; }
   #ncCourtroom h1, #ncCourtroom h2, #ncCourtroom h3, #ncCourtroom h4 { font-family: var(--serif); font-weight: 700; line-height: 1.3; color: var(--ink); margin: 16px 0 6px; }
   #ncCourtroom h1 { font-size: 17px; margin-top: 0; }
   #ncCourtroom h2 { font-size: 15.5px; }
@@ -365,7 +380,7 @@
 
   @media (max-width: 920px) {
     .nav { height: 56px; padding: 0 16px; }
-    .nav-links li:not(:last-child) { display: none; }
+    .nav-links li:not(:last-child) { display: none; }   /* phones keep only the button */
     /* Phones get their own crop (hero-library-m.jpg: gallery, ladder and lamps) as a
        band across the top; headline and sheet sit on solid walnut beneath it, so
        nothing on a small screen depends on text-over-photo contrast. */
@@ -427,7 +442,8 @@
     <li><a href="#privacy">Privacy</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#legal">Terms</a></li>
-    <li><a href="/app/" class="nav-cta">Start your case</a></li>
+    <li><a href="/app/">Open my case file</a></li>
+    <li><a href="#top" class="nav-cta" data-cta>Analyze my case</a></li>
   </ul>
 </nav>
 
@@ -452,11 +468,11 @@
         <div class="sheet intake-sheet">
           <div class="sheet-head">
             <span class="sheet-head-title">Intake sheet</span>
-            <span class="sheet-head-meta">Free during beta</span>
+            <span class="sheet-head-meta">Texas matters only. Free during beta.</span>
           </div>
           <label class="field-label" for="caseDesc">Tell us what happened</label>
           <textarea id="caseDesc" placeholder="Example: My contractor took my $25,000 deposit and never started the work. It has been 6 months and they won't return my calls..."></textarea>
-          <p class="field-help">A few sentences is enough to start. Texas matters only, for now.</p>
+          <p class="field-help">A few sentences is enough to start. You'll get a first read, then a list of what to gather.</p>
           <!-- #caseType / #userSide: hidden at runtime by nocase-v2.3-patch.js but kept in
                the DOM on purpose — they are the source of truth for the legacy fallback
                path. Each select sits in its own <div> because the patch hides the
@@ -498,8 +514,10 @@
   <div class="lobby-after">
     <div id="ncTimer" style="display:none;font-size:12px;color:rgba(245,242,237,0.75);text-align:center;margin-top:0.75rem;">Analyzing &mdash; pulling real court opinions from CourtListener...</div>
 
-  <div id="ncCourtroom" style="display:none;width:100%;max-width:900px;margin:1.5rem auto 0;">
-    <div class="nc-courtroom-grid" style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;">
+  <div id="ncCourtroom" style="display:none;">
+    <p id="ncSavedNote" class="nc-saved-note" style="display:none;"></p>
+    <p class="nc-jurisdiction">Analyzed under Texas law. NoCase covers Texas matters only, for now.</p>
+    <div class="nc-courtroom-grid">
       <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--red);border-radius:10px;overflow:hidden;">
         <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
           <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);" id="ncProsLabel">PROSECUTION</span>
@@ -507,7 +525,7 @@
         </div>
         <div id="ncProsBody" style="padding:1rem;min-height:200px;font-size:13px;color:var(--ink-soft);line-height:1.6;"></div>
       </div>
-      <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--gold);border-radius:10px;overflow:hidden;">
+      <div class="nc-judge-panel" style="background:white;border:1px solid var(--rule);border-top:3px solid var(--gold);border-radius:10px;overflow:hidden;">
         <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
           <span style="font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);">THE JUDGE</span>
           <span style="font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;background:var(--gold-light);color:var(--gold);">Verdict</span>
@@ -521,6 +539,15 @@
         </div>
         <div id="ncDefBody" style="padding:1rem;min-height:200px;font-size:13px;color:var(--ink-soft);line-height:1.6;"></div>
       </div>
+    </div>
+      <!-- Shown by the patch once a result exists. A demo reviewer finished reading the
+         panels and asked "what am I supposed to do now?" This is the answer. -->
+    <div id="ncNextStep" class="nc-nextstep" style="display:none;">
+      <div>
+        <h3>Next: start your case</h3>
+        <p>This was a first read from a few sentences. Start your case to add your evidence, answer every objection, and build the packet. What you typed comes with you.</p>
+      </div>
+      <a href="/app/" class="btn btn-lamp">Start your case &mdash; free</a>
     </div>
   </div>
     <p class="hero-disclaimer">Benchmark provides legal information only &mdash; not legal advice. No attorney-client relationship is created. All analysis is AI-generated and must be independently verified. Not a substitute for licensed legal counsel.</p>
@@ -744,7 +771,7 @@ async function ncRunAnalysis() {
     <div class="packet-copy">
       <h2 class="room-title">You leave with a packet. Where you take it is up to you.</h2>
       <p class="room-lede">NoCase prepares cases. It doesn't refer you to lawyers, match you with one, or send your file to anybody. If you decide you want a lawyer, you pick one, and you walk in with the first few hours of work already done.</p>
-      <a href="/app/" class="btn btn-paper">Start your case &mdash; free</a>
+      <a href="#top" class="btn btn-paper" data-cta>Analyze my case &mdash; free</a>
     </div>
     <div class="sheet packet-cover">
       <p class="packet-cover-kicker">What's in it</p>
@@ -763,13 +790,13 @@ async function ncRunAnalysis() {
 <section class="room" id="pricing">
   <div class="room-inner">
     <h2 class="room-title">What it costs</h2>
-    <p class="room-lede">Free while we're in beta. The regular price is below so you know what you're getting.</p>
+    <p class="room-lede">A lawyer bills by the hour and rounds up. Every text, email and screenshot you hand over unsorted is time on the bill. NoCase gets it organized, dated and argued both ways first, so the lawyer does what only a lawyer can. Free while we're in beta; the regular price is below.</p>
     <div class="sheet fees">
       <div class="sheet-head">
         <span class="sheet-head-title">Fee schedule</span>
         <span class="sheet-head-meta">NoCase</span>
       </div>
-      <p class="fees-what">Case preparation, everything included</p>
+      <p class="fees-what">Case preparation, everything included. One price covers every case you have.</p>
       <div class="fees-line">
         <div class="fees-price">$100 <small>a month</small></div>
         <div class="stamp">Fee waived<span>during beta &mdash; $0</span></div>
@@ -782,7 +809,7 @@ async function ncRunAnalysis() {
         <li>A living case brief</li>
         <li>Your downloadable case packet</li>
       </ul>
-      <a href="/app/" class="btn btn-lamp">Start your case &mdash; free</a>
+      <a href="#top" class="btn btn-lamp" data-cta>Analyze my case &mdash; free</a>
       <p class="fees-note">No card. No account. We'll tell you before that changes.</p>
     </div>
   </div>
@@ -928,7 +955,7 @@ async function ncRunAnalysis() {
 <section class="room door">
   <div class="room-inner">
     <h2 class="room-title">Walk into any lawyer's office prepared. Or find out you don't need to.</h2>
-    <a href="/app/" class="btn btn-paper">Start your case &mdash; free</a>
+    <a href="#top" class="btn btn-paper" data-cta>Analyze my case &mdash; free</a>
     <p class="door-note">Benchmark provides legal information only. Not a law firm. Not legal advice. Not a substitute for a licensed attorney.</p>
   </div>
 </section>
@@ -986,6 +1013,6 @@ async function ncRunAnalysis() {
   }
 </script>
 
-<script src="/nocase-v2.3-patch.js?v=4" defer></script>
+<script src="/nocase-v2.3-patch.js?v=5" defer></script>
 </body>
 </html>

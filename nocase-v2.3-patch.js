@@ -134,7 +134,10 @@
       winner: (t.match(/WINNER:\s*([^\n]+)/) || [, ''])[1].trim(),
       legacyToken: (t.match(/VERDICT:\s*(\w+)/) || [, ''])[1].toUpperCase(),
       confidence: isNaN(conf) ? 60 : conf,
-      reasoning: (t.match(/REASONING:\s*([\s\S]*)/) || [, ''])[1].trim(),
+      reasoning: (t.match(/REASONING:\s*([\s\S]*?)(?=\n\s*NEXT:|$)/) || [, ''])[1].trim(),
+      // NEXT: "thing | thing | thing" -- what to go and gather. Absent on an older Lambda.
+      next: ((t.match(/\n\s*NEXT:\s*([\s\S]*)/) || [, ''])[1] || '')
+        .split(/\s*\|\s*|\n+/).map(x => x.replace(/^[-*\d.)\s]+/, '').trim()).filter(x => x.length > 8).slice(0, 5),
     };
   }
 
@@ -145,6 +148,23 @@
     while ((m = re.exec(text)) !== null) qs.push(m[1].trim());
     return qs.slice(0, 4);
   }
+
+  // Model text sometimes leaks catalog ids ("breach_of_contract"). Swap a known id for
+  // its label, and turn any other snake_case word into plain words.
+  function humanize(text) {
+    return String(text || '').replace(/\b[a-z]+(?:_[a-z]+)+\b/g, id => {
+      const hit = CASE_CATALOG.find(c => c.id === id);
+      return hit ? hit.label.toLowerCase() : id.replace(/_/g, ' ');
+    });
+  }
+
+  // The last analysis is kept ON THIS DEVICE only (same posture as the case-description
+  // draft and the /app/ case folder): no account, nothing stored server-side. It answers
+  // "if I leave this page do I lose it?" without a database.
+  const SAVE_KEY = 'ncLastAnalysis';
+  // Read by /app/ (getHandoff in app/index.html) so the description carries over.
+  const HANDOFF_KEY = 'nocaseHandoff';
+  const APP_CASE_TYPE = { breach_of_contract: 'contract_dispute', business_dispute: 'business_dispute', defamation: 'defamation' };
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => (
@@ -366,7 +386,7 @@
         $('ncConfirmSummary').innerHTML =
           `This looks like a <strong>${entry.label}</strong> case (${confPct}% confidence).<br>` +
           `You appear to be the <strong>${state.userRole}</strong>; the other side is the <strong>${otherRole}</strong>.` +
-          (parsed.reasoning ? `<div style="margin-top:8px;font-size:13px;color:var(--ink-muted,#888);">${parsed.reasoning}</div>` : '');
+          (parsed.reasoning ? `<div style="margin-top:8px;font-size:13px;color:var(--ink-muted,#888);">${escapeHtml(humanize(parsed.reasoning))}</div>` : '');
 
         $('ncConfirmCaseType').value = state.caseTypeId;
         populateRoleSelect(state.caseTypeId, state.userRole);
@@ -439,7 +459,7 @@
         const secs = Math.round((Date.now() - startedAt) / 1000);
         const mm = Math.floor(secs / 60), ss = String(secs % 60).padStart(2, '0');
         if (timerEl) {
-          timerEl.textContent = `Analyzing \u2014 ${mm}:${ss} elapsed \u00b7 ${done} of ${TOTAL} done \u00b7 this usually takes 10\u201320 seconds.`;
+          timerEl.textContent = `Analyzing \u2014 ${mm}:${ss} elapsed \u00b7 ${done} of ${TOTAL} done \u00b7 this usually takes 10\u201320 seconds. Keep this tab open until it finishes; after that your result is saved on this device.`;
         }
       };
       tick();
@@ -535,7 +555,10 @@
             `<div style="margin:0 0 4px;font-size:11px;color:var(--ink-muted,#888);">Your position (${escapeHtml(state.userRole)}) \u2014 ${userPct}%</div>` +
             `<div style="height:6px;background:var(--paper-dark,#eee);border-radius:3px;overflow:hidden;margin-bottom:12px;">` +
             `<div id="ncFill" data-pct="${userPct}" style="height:100%;width:0%;background:${barColor};border-radius:3px;transition:width 1.2s ease;"></div></div>` +
-            mdToHtml(verdict.reasoning));
+            mdToHtml(verdict.reasoning) +
+            (verdict.next.length
+              ? `<div class="nc-next"><h3>What to gather next</h3><ul>${verdict.next.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul></div>`
+              : ''));
           // Paint at 0% first, then animate \u2014 the transition needs a frame at the old width.
           requestAnimationFrame(() => {
             const fill = $('ncFill');
@@ -628,6 +651,7 @@
       btn.style.opacity = '1';
       btn.textContent = 'Looks good — analyze';
       analysisRunning = false;
+      if (failed < TOTAL) { saveAnalysis(); setHasResult(true); }
 
       // Nothing came back at all. Put the Confirm card back so the user can retry
       // (or correct the case type) with their facts still in the box.
@@ -638,6 +662,81 @@
         $('ncConfirmCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
+
+    // ─── Result state: save, restore, and what the page's buttons say ───────────
+    // Every button marked data-cta has two states. No result yet: "Analyze my case"
+    // and it jumps to the intake sheet -- a demo reviewer clicked Start your case
+    // first and landed in the workspace with nothing to work on. Once a result exists:
+    // "Start your case", and it carries the description into /app/.
+    function setHasResult(has) {
+      document.querySelectorAll('[data-cta]').forEach(a => {
+        a.textContent = has ? 'Start your case \u2014 free' : 'Analyze my case \u2014 free';
+        a.setAttribute('href', has ? '/app/' : '#top');
+        if (a.classList.contains('nav-cta')) a.textContent = has ? 'Start your case' : 'Analyze my case';
+      });
+      const next = $('ncNextStep');
+      if (next) next.style.display = has ? '' : 'none';
+    }
+    function handoffToApp() {
+      try {
+        const facts = state.facts || getFacts();
+        if (!facts) return;
+        const h = { desc: facts };
+        if (APP_CASE_TYPE[state.caseTypeId]) h.type = APP_CASE_TYPE[state.caseTypeId];
+        localStorage.setItem(HANDOFF_KEY, JSON.stringify(h));
+      } catch (e) { /* storage unavailable: /app/ just opens without the carry-over */ }
+    }
+    document.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a[href="/app/"]');
+      if (a) handoffToApp();
+      const jump = e.target.closest && e.target.closest('[data-cta][href="#top"]');
+      if (jump) setTimeout(() => { const ta = $('caseDesc'); if (ta) ta.focus({ preventScroll: true }); }, 450);
+    });
+    function saveAnalysis() {
+      const oldNote = $('ncSavedNote'); if (oldNote) oldNote.style.display = 'none';   // that note described the previous run
+      try {
+        const hero = document.querySelector('.hero-headline'), sub = document.querySelector('.hero-sub');
+        const grab = id => ($(id) ? $(id).innerHTML : '');
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          v: 1, at: Date.now(), facts: state.facts, caseTypeId: state.caseTypeId, userRole: state.userRole,
+          pros: grab('ncProsBody'), judge: grab('ncJudgeBody'), def: grab('ncDefBody'),
+          prosLabel: grab('ncProsLabel'), defLabel: grab('ncDefLabel'), prosBadge: grab('ncProsBadge'), defBadge: grab('ncDefBadge'),
+          heroHtml: hero ? hero.innerHTML : '', heroClass: hero ? hero.className : '', sub: sub ? sub.textContent : '',
+        }));
+      } catch (e) { /* private mode / quota: the result simply isn't kept */ }
+    }
+    function restoreAnalysis() {
+      let d;
+      try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { d = null; }
+      // 30 days: a stale verdict on a changed case is worse than none.
+      if (!d || d.v !== 1 || !d.judge || Date.now() - d.at > 30 * 864e5) return;
+      state.facts = d.facts || ''; state.caseTypeId = d.caseTypeId; state.userRole = d.userRole;
+      const setHtml = (id, val) => { const n = $(id); if (n) n.innerHTML = val || ''; };   // runAnalysis has its own; out of scope here
+      const ta = $('caseDesc'); if (ta && !ta.value) ta.value = state.facts;
+      setHtml('ncProsBody', d.pros); setHtml('ncJudgeBody', d.judge); setHtml('ncDefBody', d.def);
+      setHtml('ncProsLabel', d.prosLabel); setHtml('ncDefLabel', d.defLabel);
+      setHtml('ncProsBadge', d.prosBadge); setHtml('ncDefBadge', d.defBadge);
+      const fill = $('ncFill'); if (fill) fill.style.width = (fill.getAttribute('data-pct') || 0) + '%';
+      const hero = document.querySelector('.hero-headline'), sub = document.querySelector('.hero-sub');
+      if (hero && d.heroHtml) { hero.innerHTML = d.heroHtml; hero.className = d.heroClass; }
+      if (sub && d.sub) sub.textContent = d.sub;
+      const courtroom = $('ncCourtroom'); if (courtroom) courtroom.style.display = '';
+      const note = $('ncSavedNote');
+      if (note) {
+        const when = new Date(d.at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+        note.innerHTML = `Your analysis from ${escapeHtml(when)}, saved on this device. <a href="#" id="ncClearSaved">Clear it</a>`;
+        note.style.display = '';
+        $('ncClearSaved').addEventListener('click', ev => {
+          ev.preventDefault();
+          try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+          location.reload();
+        });
+      }
+      setRunButtonText('Run again', false);
+      setHasResult(true);
+    }
+    setHasResult(false);
+    restoreAnalysis();
 
     $('ncConfirmContinueBtn').addEventListener('click', () => {
       // Apply any override, then run.
