@@ -191,6 +191,23 @@
   .lobby-after { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; }
   #ncTimer { font-size: 14px; color: var(--on-dark); text-align: center; margin-top: 20px; }
   #ncCourtroom { width: 100%; margin: 24px auto 0; }
+  /* Results are paper, so they take ink. The page's text colour is light (rooms are
+     dark) and #ncJudgeBody sets no colour of its own — it used to inherit the old
+     page's dark ink. Without this the verdict renders near-white on a white panel:
+     present in the DOM, invisible on screen. Same for anything the patch injects. */
+  #ncCourtroom, #ncConfirmCard, #ncQACard { color: var(--ink); }
+  /* The side panels hold model-written markdown (h1-h3, lists). The global reset
+     zeroes list padding and leaves headings at browser size, so give them a scale
+     that fits a 280px column. */
+  #ncJudgeBody { font-size: 14px; line-height: 1.6; }
+  #ncCourtroom h1, #ncCourtroom h2, #ncCourtroom h3, #ncCourtroom h4 { font-family: var(--serif); font-weight: 700; line-height: 1.3; color: var(--ink); margin: 16px 0 6px; }
+  #ncCourtroom h1 { font-size: 17px; margin-top: 0; }
+  #ncCourtroom h2 { font-size: 15.5px; }
+  #ncCourtroom h3, #ncCourtroom h4 { font-size: 14px; }
+  #ncCourtroom p { margin: 0 0 10px; }
+  #ncCourtroom ul, #ncCourtroom ol { padding-left: 1.3em; margin: 0 0 10px; }
+  #ncCourtroom li { margin-bottom: 4px; }
+  #ncCourtroom hr { border: 0; border-top: 1px solid var(--rule); margin: 12px 0; }
   .hero-disclaimer { font-size: 12px; line-height: 1.55; color: var(--on-dark-soft); max-width: 62em; margin: 28px auto 0; text-align: center; }
 
   /* One orchestrated load, then stillness. Nothing else on the page animates on
