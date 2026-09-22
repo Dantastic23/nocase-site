@@ -321,6 +321,18 @@
   .workspace.flow-on .tools-toggle { display: block; }
   .workspace.flow-on .sidebar h3 { display: none; }
   @media (max-width: 900px) { .workspace.flow-on .sidebar.tools-open nav { display: flex; } .tools-toggle { width: auto; margin: 0; white-space: nowrap; } }
+  /* Step 6: explanations (flow-spec Phase 4) */
+  .exp-item { background: #fff; border: 1px solid var(--rule); border-radius: 8px; padding: 0.75rem 0.85rem; }
+  .exp-item h5 { margin: 0 0 0.25rem; font-size: 0.92rem; } .exp-item .obj-q { font-style: italic; font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .exp-item textarea { width: 100%; min-height: 6rem; font: inherit; font-size: 0.88rem; padding: 0.5rem 0.6rem; border: 1px solid var(--rule); border-radius: 6px; resize: vertical; box-sizing: border-box; }
+  .exp-item .row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.45rem; align-items: center; }
+  .exp-item .saved { font-size: 0.78rem; color: #1a7a4a; }
+  .exp-guide { margin-top: 0.55rem; border-top: 1px dashed var(--rule); padding-top: 0.5rem; font-size: 0.84rem; }
+  .exp-weight { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 99px; margin-right: 0.4rem; }
+  .exp-weight.strong { background: #e3f4ea; color: #1a7a4a; } .exp-weight.needs { background: #fff4d6; color: #7a5a00; } .exp-weight.weak { background: #fdecea; color: #9a1c1c; }
+  .exp-guide ul { margin: 0.3rem 0; padding-left: 1.1rem; } .exp-guide li { margin-bottom: 0.2rem; }
+  .exp-guide details { margin-top: 0.4rem; font-size: 0.78rem; color: var(--ink-soft); }
+  .exp-crim { margin-top: 0.4rem; background: #fdf3f2; border: 1px solid #e3b4b0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.78rem; color: #7a1f1f; }
   /* Ask NoCase (flow-spec Phase 3) */
   .ask-fab { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 800; background: var(--ink); color: var(--paper); border: none; border-radius: 99px; padding: 0.7rem 1.1rem; font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
   .ask-fab[hidden] { display: none; }
@@ -1877,7 +1889,7 @@ function showToast(msg) {
       const objs = g.obj?.objections || [];
       const resolved = g.obj?.resolved || [];
       const resolutions = g.obj?.resolutions || {};
-      const RES_LBL = { accepted: "RESPONSE ACCEPTED", evidence: "RESOLVED WITH EVIDENCE", conceded: "CONCEDED — KNOWN WEAKNESS" };
+      const RES_LBL = { accepted: "RESPONSE ACCEPTED", evidence: "RESOLVED WITH EVIDENCE", conceded: "CONCEDED — KNOWN WEAKNESS", explained: "ANSWERED WITH A WRITTEN EXPLANATION" };
       const order = { critical: 0, serious: 1, moderate: 2 };
 
       let objHtml = "";
@@ -2010,9 +2022,9 @@ function showToast(msg) {
     return out.join("\n");
   }
 
-  function kitPage(md, builtAt) {
+  function kitPage(md, builtAt, label) {
     const title = cs().title || "Untitled matter";
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Hearing kit — ${esc(title)}</title><style>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(label ? label.charAt(0) + label.slice(1).toLowerCase().split(" · ")[0] : "Hearing kit")} — ${esc(title)}</title><style>
       body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; font-size: 14px; }
       h1 { font-size: 1.8rem; margin: 0 0 0.3rem; } h2 { font-size: 1.25rem; border-bottom: 2px solid #111; padding-bottom: 0.25rem; margin: 2rem 0 0.8rem; page-break-after: avoid; }
       h3 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; page-break-after: avoid; }
@@ -2027,16 +2039,18 @@ function showToast(msg) {
       @media print { .printbar { display: none; } body { padding: 0; font-size: 12.5px; } a { color: #111; } }
     </style></head><body>
     <div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div>
-    <div class="cover"><div class="sub">HEARING KIT · REPRESENTING MYSELF</div><h1>${esc(title)}</h1>
+    <div class="cover"><div class="sub">${esc(label || "HEARING KIT · REPRESENTING MYSELF")}</div><h1>${esc(title)}</h1>
       <div class="meta">Built ${esc(new Date(builtAt || Date.now()).toLocaleString())} with NoCase (nocase.org) from your own case file.<br>Print it. Phones are often not allowed in court.</div></div>
     ${renderKit(md)}
     </body></html>`;
   }
-  function showKit(md, builtAt, w) {
+  function showKit(md, builtAt, w, label) {
     const win = w || window.open("", "_blank");
-    if (!win) { if (typeof showToast === "function") showToast("Popup blocked. Allow popups for nocase.org, then use Open my hearing kit."); return; }
-    win.document.open(); win.document.write(kitPage(md, builtAt)); win.document.close();
+    if (!win) { if (typeof showToast === "function") showToast("Popup blocked. Allow popups for nocase.org, then try again."); return; }
+    win.document.open(); win.document.write(kitPage(md, builtAt, label)); win.document.close();
   }
+  window.__ncShowDoc = showKit;
+  window.__ncRenderKit = renderKit;
 
   async function loadDocuments() {
     const docs = typeof listDocuments === "function" ? await listDocuments() : [];
@@ -2066,6 +2080,8 @@ function showToast(msg) {
       const payload = { task: "generate_hearing_kit", representation: "self", caseTitle: cs().title || "Untitled matter",
         caseDescription: step1.description || cs().caseDescription || "", caseType: step1.caseType || cs().caseType || "unknown",
         userRole: step1.userRole || null, otherRole: step1.otherRole || null, brief, objections, documents: await loadDocuments() };
+      const prec = await readText("precedent-report.md");
+      if (prec) payload.documents.push({ name: "precedent-report.md (NoCase precedent report)", text: prec });
       const r = await fetch(FUNCTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error("the server answered " + r.status);
       const data = await r.json();
@@ -2236,13 +2252,13 @@ function showToast(msg) {
       done: s => s.objCount > 0 && (s.openHard === 0 || !!flow().redlineDone), flag: "redlineDone" },
     { id: "explain", chip: "Explain", title: "Your explanation",
       inst: "For objections you couldn't answer with evidence, write your explanation in the objection's note. Be specific: dates, names, what you saw yourself.",
-      pri: "Open the objections", act: () => sw("objections"),
+      pri: "Write my explanations", act: () => window.ncOpenExplain ? window.ncOpenExplain() : sw("objections"),
       next: "Continue", canNext: () => true,
       done: () => !!flow().explainDone, flag: "explainDone" },
     { id: "precedent", chip: "Precedent", title: "The law and similar cases",
-      inst: "Read the statutes and cases NoCase pulled for your case, including the ones that cut against you, in your brief's \"Law that applies\" section.",
-      pri: "See the law", act: () => { sw("brief"); setTimeout(() => { const h = [...document.querySelectorAll("#briefBody h2")].find(x => /law that applies/i.test(x.textContent)); h && h.scrollIntoView({ behavior: "smooth" }); }, 500); },
-      next: "Continue", canNext: s => s.brief,
+      inst: s => s.precedent ? "Read your precedent report: cases like yours from Texas and other states, who won, who lost, and what decided them. Rebuild it after new evidence." : "NoCase searches court opinions in Texas and every other state for cases like yours and reads them: who won, who lost, and what decided them. About 2 minutes.",
+      pri: s => s.precedent ? "Open my precedent report" : "Find similar cases", act: s => window.ncPrecedent ? window.ncPrecedent(!s.precedent) : sw("brief"),
+      next: "Continue", canNext: s => s.precedent, needMsg: "Build your precedent report first.",
       done: () => !!flow().precedentDone, flag: "precedentDone" },
     { id: "who", chip: "Who for", title: "Who is this case file for?",
       inst: "An attorney you're hiring, or you representing yourself at the hearing.",
@@ -2259,6 +2275,7 @@ function showToast(msg) {
     const st = { docCount: 0, brief: false, objCount: 0, openHard: 0 };
     try { st.docCount = (await listDocuments()).length; } catch {}
     st.brief = !!(await exists("case-brief.md"));
+    st.precedent = !!(await exists("precedent-report.md"));
     try {
       const f = await exists("objections.json");
       if (f) { const o = JSON.parse(await f.text()); const objs = o.objections || [], res = o.resolved || [];
@@ -2337,6 +2354,102 @@ function showToast(msg) {
     if (!document.getElementById("workspace")?.classList.contains("hidden")) window.refreshStepper();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+
+/* ─── Steps 6 and 7: explanations and precedent (docs/flow-spec.md, Phase 4) ─── */
+(function () {
+  const FUNCTION_URL = "https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/";
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const folder = () => (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+  const cs = () => (typeof caseState !== "undefined" && caseState) || {};
+  async function readText(n) { try { return await (await (await folder().getFileHandle(n)).getFile()).text(); } catch { return null; } }
+  const call = async body => { const r = await fetch(FUNCTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!r.ok) throw new Error("the server answered " + r.status); return (await r.json()).result; };
+
+  // ── Step 6: written explanations for objections without evidence ──
+  window.ncOpenExplain = async function () {
+    let obj = null; try { obj = JSON.parse(await readText("objections.json") || "null"); } catch {}
+    const brief = (await readText("case-brief.md")) || "";
+    const objs = obj?.objections || [];
+    const res = obj?.resolutions || {}, resolved = obj?.resolved || [];
+    const need = objs.filter(o => !resolved.includes(o.id) || ["conceded", "explained"].includes(res[o.id]?.method));
+    const wrap = document.createElement("div");
+    wrap.className = "prac";
+    wrap.innerHTML = `<div class="prac-box" role="dialog" aria-label="Your explanations">
+      <div class="prac-head"><div><h4>Your explanations</h4><p>For objections you couldn't answer with evidence, write what happened in your own words. NoCase checks what makes a written statement count and tells you what's missing. It never adds facts for you.</p></div><button class="obj-btn" data-x="close">Close</button></div>
+      <div class="prac-log"></div></div>`;
+    document.body.appendChild(wrap);
+    const log = wrap.querySelector(".prac-log");
+    wrap.querySelector('[data-x="close"]').onclick = () => { wrap.remove(); if (window.refreshStepper) window.refreshStepper(); };
+    if (!objs.length) { log.innerHTML = `<div class="prac-wait">No objections yet. Go back to step 5 and test your case first.</div>`; return; }
+    if (!need.length) { log.innerHTML = `<div class="prac-wait">Every objection is answered with evidence or an accepted response. Nothing to write here: close this and continue.</div>`; return; }
+    need.forEach(o => {
+      const item = document.createElement("div");
+      item.className = "exp-item";
+      item.innerHTML = `<h5>${esc((o.threat || "").toUpperCase())} objection</h5><p class="obj-q">${esc(o.objection)}</p>
+        <textarea placeholder="What happened, in your own words. Only what you saw, heard or did yourself. Dates, times, places, names.">${esc(res[o.id]?.note || "")}</textarea>
+        <div class="row"><button class="obj-btn" data-a="check">Check my explanation</button><button class="obj-btn primary" data-a="save">Save explanation</button><span class="saved"></span></div>
+        <div class="exp-guide" hidden></div>`;
+      log.appendChild(item);
+      const ta = item.querySelector("textarea"), guide = item.querySelector(".exp-guide"), saved = item.querySelector(".saved");
+      item.querySelector('[data-a="check"]').onclick = async e => {
+        const b = e.target; b.disabled = true; b.textContent = "Checking… about 20 seconds";
+        guide.hidden = false; guide.innerHTML = "";
+        try {
+          const g = await call({ task: "explanation_guidance", objection: o.objection, response: o.response, explanation: ta.value, caseType: cs().caseType, brief });
+          const cls = g.weight === "strong" ? "strong" : g.weight === "weak" ? "weak" : "needs";
+          guide.innerHTML = `<div><span class="exp-weight ${cls}">${esc(g.weight)}</span>${esc(g.summary)}</div>
+            ${g.checks?.length ? `<ul>${g.checks.map(c => `<li>${c.met ? "✓" : "✗"} <b>${esc(c.rule.replace(/_/g, " "))}:</b> ${esc(c.note)}</li>`).join("")}</ul>` : ""}
+            ${g.improvements?.length ? `<b>To strengthen it:</b><ul>${g.improvements.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+            ${g.criminalNote ? `<div class="exp-crim">${esc(g.criminalNote)}</div>` : ""}
+            <details><summary>Making a written statement count as sworn (Texas)</summary><p>${esc(g.swornNote)}</p></details>`;
+        } catch (err) { guide.textContent = "That didn't go through (" + err.message + "). Try again."; }
+        b.disabled = false; b.textContent = "Check my explanation";
+      };
+      item.querySelector('[data-a="save"]').onclick = async () => {
+        const note = ta.value.trim();
+        if (note.length < 20) { saved.textContent = "Write a few sentences first."; return; }
+        let cur = null; try { cur = JSON.parse(await readText("objections.json") || "null"); } catch {}
+        if (!cur) return;
+        cur.resolutions = cur.resolutions || {}; cur.resolved = cur.resolved || [];
+        cur.resolutions[o.id] = { ...(cur.resolutions[o.id] || {}), method: "explained", note, resolvedAt: new Date().toISOString() };
+        if (!cur.resolved.includes(o.id)) cur.resolved.push(o.id);
+        await writeFileText(folder(), "objections.json", JSON.stringify(cur, null, 2));
+        saved.textContent = "Saved. It goes into your packet and hearing kit.";
+      };
+    });
+  };
+
+  // ── Step 7: precedent report ──
+  window.ncPrecedent = async function (build) {
+    const existing = await readText("precedent-report.md");
+    if (!build && existing) { window.__ncShowDoc && window.__ncShowDoc(existing, Date.now(), null, "PRECEDENT REPORT"); return; }
+    const brief = await readText("case-brief.md");
+    if (!brief || brief.length < 100) { if (typeof showToast === "function") showToast("Build your brief first. The precedent search starts from the law in it."); return; }
+    const w = window.open("", "_blank");
+    if (w) w.document.write("<p style='font-family:Georgia,serif;padding:2rem;font-size:16px'>Searching court opinions in Texas and every other state for cases like yours, then reading them… about 2 minutes. Keep this tab and the NoCase tab open.</p>");
+    if (typeof showToast === "function") showToast("Finding similar cases… about 2 minutes");
+    try {
+      let docs = [];
+      try {
+        const list = await listDocuments(); const dir = await folder().getDirectoryHandle("documents");
+        docs = await Promise.all(list.map(async d => {
+          let text = (window.docTextCache && window.docTextCache.get(d.name)) || null;
+          if (!text && typeof window.extractText === "function") { try { text = await window.extractText(await (await dir.getFileHandle(d.name)).getFile()); } catch {} }
+          return { name: d.name, text };
+        }));
+      } catch {}
+      const step1 = cs().intake?.step1 || {};
+      const r = await call({ task: "find_precedent", caseTitle: cs().title || "Untitled matter", caseDescription: cs().caseDescription || step1.description || "", brief, documents: docs });
+      if (!r?.report) throw new Error("no report came back");
+      await writeFileText(folder(), "precedent-report.md", r.report);
+      window.__ncShowDoc && window.__ncShowDoc(r.report, Date.now(), w, "PRECEDENT REPORT");
+      if (typeof showToast === "function") showToast("Precedent report saved to your case folder.");
+      if (window.refreshStepper) window.refreshStepper();
+    } catch (e) {
+      if (w) { w.document.open(); w.document.write("<p style='font-family:Georgia,serif;padding:2rem'>The precedent search didn't finish: " + esc(e.message) + ". Close this tab and try again in a minute.</p>"); w.document.close(); }
+      if (typeof showToast === "function") showToast("Precedent search failed: " + e.message);
+    }
+  };
 })();
 
 /* ─── Ask NoCase (docs/flow-spec.md, Phase 3) ─────────────────────────────── */
