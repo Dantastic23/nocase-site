@@ -292,6 +292,27 @@
   .rdy-who-act:empty { display: none; }
   .rdy-who-act .note { font-size: 0.8rem; color: var(--ink-soft); }
   @media (max-width: 640px) { .rdy-who-opts { grid-template-columns: 1fr; } }
+  /* Practice my hearing (flow-spec Phase 2) */
+  .prac { position: fixed; inset: 0; z-index: 900; background: rgba(14,14,14,0.55); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .prac-box { background: #fff; width: min(760px, 100%); height: min(88vh, 900px); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .prac-head { padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule); display: flex; gap: 0.8rem; align-items: flex-start; justify-content: space-between; }
+  .prac-head h4 { margin: 0; font-size: 1.02rem; } .prac-head p { margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--ink-soft); }
+  .prac-log { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; background: #faf9f6; }
+  .prac-turn { max-width: 88%; padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.92rem; line-height: 1.5; }
+  .prac-turn b { display: block; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.15rem; }
+  .prac-turn.judge { background: #fff; border: 1px solid var(--rule); align-self: flex-start; } .prac-turn.judge b { color: #5a4a12; }
+  .prac-turn.other_side { background: #fff; border: 1px solid #c9d3e8; align-self: flex-start; } .prac-turn.other_side b { color: #2b4fad; }
+  .prac-turn.user { background: var(--ink); color: #fff; align-self: flex-end; } .prac-turn.user b { color: rgba(255,255,255,0.7); }
+  .prac-coach { align-self: stretch; background: #fff7dc; border: 1px solid #e6c65c; border-radius: 6px; padding: 0.5rem 0.7rem; font-size: 0.84rem; }
+  .prac-coach b { color: #7a5a00; }
+  .prac-wait { align-self: flex-start; font-size: 0.82rem; color: var(--ink-soft); font-style: italic; }
+  .prac-feedback { align-self: stretch; background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 0.9rem 1rem; font-size: 0.9rem; }
+  .prac-feedback h2 { font-size: 1rem; margin: 0.9rem 0 0.35rem; } .prac-feedback h2:first-child { margin-top: 0; }
+  .prac-feedback blockquote { border-left: 3px solid #999; margin: 0.4rem 0; padding-left: 0.7rem; color: #444; }
+  .prac-foot { border-top: 1px solid var(--rule); padding: 0.6rem; display: flex; gap: 0.5rem; align-items: flex-end; }
+  .prac-foot textarea { flex: 1; resize: none; min-height: 2.6rem; max-height: 8rem; font: inherit; font-size: 0.92rem; padding: 0.55rem 0.65rem; border: 1px solid var(--rule); border-radius: 6px; }
+  .prac-foot .col { display: flex; flex-direction: column; gap: 0.35rem; }
+  @media (max-width: 640px) { .prac { padding: 0; } .prac-box { height: 100%; border-radius: 0; } }
   /* Readiness tab */
   .rdy-hero { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1.4rem 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; }
   .rdy-dial { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; flex-shrink: 0; color: white; }
@@ -1893,6 +1914,7 @@ function showToast(msg) {
   // Long model call (~2 min): Function URL, same as the brief. API Gateway cuts at 29s.
   const FUNCTION_URL = "https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/";
   const KIT_FILE = "hearing-kit.md";
+  const FEEDBACK_FILE = "practice-feedback.md";
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const folder = () => (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
   const cs = () => (typeof caseState !== "undefined" && caseState) || {};
@@ -2020,12 +2042,86 @@ function showToast(msg) {
     } else if (who === "self") {
       const info = await kitInfo();
       box.innerHTML = `<button class="obj-btn primary" data-act="kit">${info ? "Rebuild my hearing kit" : "Build my hearing kit"}</button>` +
-        (info ? `<button class="obj-btn" data-act="open">Open my hearing kit</button><span class="note">Last built ${esc(new Date(info.at).toLocaleString())}. Rebuild after you add evidence or resolve objections.</span>`
+        (info ? `<button class="obj-btn" data-act="open">Open my hearing kit</button><button class="obj-btn primary" data-act="practice">Practice my hearing</button>${(await readText(FEEDBACK_FILE)) ? `<button class="obj-btn" data-act="feedback">Last practice feedback</button>` : ""}<span class="note">Kit last built ${esc(new Date(info.at).toLocaleString())}. Rebuild after you add evidence or resolve objections.</span>`
               : `<span class="note">About 2 minutes. How your hearing will go, your court, your script, exhibit list, the law to hand the judge, cautions.</span>`);
       const kb = box.querySelector('[data-act="kit"]'); kb.onclick = () => buildKit(kb, box);
       const ob = box.querySelector('[data-act="open"]');
       if (ob) ob.onclick = async () => { const md = await readText(KIT_FILE); if (md) showKit(md, info.at); };
+      const pb = box.querySelector('[data-act="practice"]'); if (pb) pb.onclick = () => openPractice(box);
+      const fb = box.querySelector('[data-act="feedback"]'); if (fb) fb.onclick = async () => { const md = await readText(FEEDBACK_FILE); if (md) showKit(md, Date.now()); };
     }
+  }
+
+  // ── Practice my hearing ────────────────────────────────────────────────
+  async function openPractice(actBox) {
+    const kit = await readText(KIT_FILE);
+    if (!kit) { if (typeof showToast === "function") showToast("Build your hearing kit first. Practice uses it."); return; }
+    const brief = (await readText("case-brief.md")) || "";
+    const transcript = [];
+    const wrap = document.createElement("div");
+    wrap.className = "prac";
+    wrap.innerHTML = `<div class="prac-box" role="dialog" aria-label="Practice hearing">
+      <div class="prac-head"><div><h4>Practice hearing</h4><p>NoCase plays the judge and the other side, using your hearing kit. This is practice. Nothing here is real, recorded in court, or a prediction.</p></div>
+        <button class="obj-btn" data-x="close">Close</button></div>
+      <div class="prac-log"></div>
+      <div class="prac-foot"><textarea placeholder="Your answer… (Enter to send, Shift+Enter for a new line)" disabled></textarea>
+        <div class="col"><button class="obj-btn primary" data-x="send" disabled>Send</button><button class="obj-btn" data-x="end" disabled>End &amp; get feedback</button></div></div></div>`;
+    document.body.appendChild(wrap);
+    const log = wrap.querySelector(".prac-log"), ta = wrap.querySelector("textarea");
+    const sendB = wrap.querySelector('[data-x="send"]'), endB = wrap.querySelector('[data-x="end"]');
+    const LABEL = { judge: "Judge", other_side: "Other side", user: "You" };
+    const add = (cls, html) => { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
+    const turnHtml = (role, text) => `<b>${LABEL[role]}</b>${esc(text).replace(/\n/g, "<br>")}`;
+    const lock = on => { ta.disabled = on; sendB.disabled = on; endB.disabled = on || transcript.length < 2; };
+    let finished = false;
+
+    async function step(action) {
+      lock(true);
+      const wait = add("prac-wait", action === "finish" ? "Writing your feedback… about 20 seconds." : "…");
+      try {
+        const r = await fetch(FUNCTION_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task: "practice_hearing", action, kit, brief, transcript }) });
+        if (!r.ok) throw new Error("the server answered " + r.status);
+        const t = (await r.json()).result;
+        wait.remove();
+        transcript.push({ role: t.speaker, text: t.text });
+        add("prac-turn " + t.speaker, turnHtml(t.speaker, t.text));
+        if (t.coach) add("prac-coach", `<b>Coach:</b> ${esc(t.coach)}`);
+        if (t.done) {
+          finished = true;
+          if (t.feedback) {
+            add("prac-feedback", renderKit(t.feedback));
+            try {
+              await writeFileText(folder(), FEEDBACK_FILE, `# Practice feedback\n\n*Practice session ${new Date().toLocaleString()}*\n\n` + t.feedback);
+              await writeFileText(folder(), "practice-transcript.json", JSON.stringify({ at: new Date().toISOString(), transcript }, null, 2));
+            } catch {}
+          }
+          ta.disabled = true; sendB.disabled = true; endB.disabled = true;
+          ta.placeholder = "Practice finished. Close this window, or start again from the Readiness tab.";
+          return;
+        }
+      } catch (e) {
+        wait.textContent = "That turn didn't go through (" + e.message + "). Press Send to try again.";
+      }
+      lock(false); ta.focus();
+    }
+    function send() {
+      const text = ta.value.trim();
+      if (!text || finished) return;
+      transcript.push({ role: "user", text });
+      add("prac-turn user", turnHtml("user", text));
+      ta.value = "";
+      step("reply");
+    }
+    sendB.onclick = send;
+    ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    endB.onclick = () => step("finish");
+    wrap.querySelector('[data-x="close"]').onclick = () => {
+      if (!finished && transcript.length > 2 && !confirmClose()) return;
+      wrap.remove(); renderActions(actBox);
+    };
+    function confirmClose() { return window.confirm("End this practice without feedback?"); }
+    step("start");
   }
 
   window.ncRenderWho = function (body) {
