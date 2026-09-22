@@ -279,6 +279,19 @@
     .onboarding-card { padding: 1.8rem 1.4rem; }
   }
 
+  /* Who is this for? (flow-spec step 8) */
+  .rdy-who { border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 1.1rem; background: #fff; }
+  .rdy-who h4 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+  .rdy-who > p { margin: 0 0 0.8rem; font-size: 0.85rem; color: var(--ink-soft); }
+  .rdy-who-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+  .rdy-who-opts button { text-align: left; font: inherit; background: #fbfaf7; border: 1.5px solid var(--rule); border-radius: 7px; padding: 0.75rem 0.85rem; cursor: pointer; color: inherit; }
+  .rdy-who-opts button b { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .rdy-who-opts button span { font-size: 0.8rem; color: var(--ink-soft); line-height: 1.45; }
+  .rdy-who-opts button.on { border-color: var(--ink); background: #fff; box-shadow: inset 0 0 0 1px var(--ink); }
+  .rdy-who-act { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.85rem; }
+  .rdy-who-act:empty { display: none; }
+  .rdy-who-act .note { font-size: 0.8rem; color: var(--ink-soft); }
+  @media (max-width: 640px) { .rdy-who-opts { grid-template-columns: 1fr; } }
   /* Readiness tab */
   .rdy-hero { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 1.4rem 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; }
   .rdy-dial { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; flex-shrink: 0; color: white; }
@@ -1620,8 +1633,8 @@ function showToast(msg) {
     info.stage = "packet";
     info.hint = info.missingEvidence.length
       ? `Almost there — still missing: ${info.missingEvidence.slice(0, 2).join(", ")}${info.missingEvidence.length > 2 ? "…" : ""}`
-      : "Case is pressure-tested. Compile your attorney handoff packet.";
-    info.action = "Compile packet";
+      : "Case is pressure-tested. Choose who it's for: an attorney, or you at your own hearing.";
+    info.action = caseState?.representation === "self" ? "Build hearing kit" : "Finish your case file";
     return info;
   }
 
@@ -1775,6 +1788,7 @@ function showToast(msg) {
       html += `<div class="rdy-row"><span class="pts ${pcls}">${r.pts}/${r.max}</span><span class="what">${esc(r.what)}${r.todo ? `<div class="todo">→ ${esc(r.todo)}</div>` : ""}</span></div>`;
     }
     body.innerHTML = html;
+    if (window.ncRenderWho) window.ncRenderWho(body);
     meta.textContent = `Scored ${new Date().toLocaleDateString()} · ${g.docs.length} documents on file`;
   };
 
@@ -1872,6 +1886,168 @@ function showToast(msg) {
 
   function init() { document.getElementById("rdyPacketBtn")?.addEventListener("click", compilePacket); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+
+/* ─── Who is this for? + Hearing kit (docs/flow-spec.md steps 8 and 9b) ─── */
+(function () {
+  // Long model call (~2 min): Function URL, same as the brief. API Gateway cuts at 29s.
+  const FUNCTION_URL = "https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/";
+  const KIT_FILE = "hearing-kit.md";
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const folder = () => (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+  const cs = () => (typeof caseState !== "undefined" && caseState) || {};
+  async function readText(name) {
+    try { const h = await folder().getFileHandle(name); return await (await h.getFile()).text(); } catch { return null; }
+  }
+  async function kitInfo() {
+    try { const f = await (await folder().getFileHandle(KIT_FILE)).getFile(); return { at: f.lastModified }; } catch { return null; }
+  }
+
+  // Markdown for the kit: the brief renderer plus tables, links and multi-line quotes,
+  // which the kit uses for the exhibit list, the authorities and the caution box.
+  function inline(t) {
+    t = esc(t);
+    t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (m, a, u) => `<a href="${u}">${a}</a>`);
+    t = t.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (m, pre, u) => `${pre}<a href="${u}">${u}</a>`);
+    t = t.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    return t;
+  }
+  function renderKit(md) {
+    const lines = String(md || "").split(/\r?\n/);
+    const out = []; let list = null, quote = [], table = [];
+    const flush = () => {
+      if (list) { out.push(`</${list}>`); list = null; }
+      if (quote.length) { const warn = quote.some(q => q.includes("⚠")); out.push(`<blockquote${warn ? ' class="caution"' : ""}>${quote.map(inline).join("<br>")}</blockquote>`); quote = []; }
+      if (table.length) {
+        const rows = table.filter(r => !/^\|?\s*:?-{2,}/.test(r)).map(r => r.replace(/^\||\|$/g, "").split("|").map(c => c.trim()));
+        out.push("<table>" + rows.map((r, i) => "<tr>" + r.map(c => i ? `<td>${inline(c)}</td>` : `<th>${inline(c)}</th>`).join("") + "</tr>").join("") + "</table>");
+        table = [];
+      }
+    };
+    for (const ln of lines) {
+      let m;
+      if (/^\s*\|/.test(ln)) { if (!table.length) flush(); table.push(ln.trim()); continue; }
+      if ((m = ln.match(/^>\s?(.*)$/))) { if (!quote.length) flush(); quote.push(m[1]); continue; }
+      if (table.length || quote.length) flush();
+      if (/^\s*$/.test(ln)) { flush(); continue; }
+      if (/^---+\s*$/.test(ln)) { flush(); out.push("<hr>"); continue; }
+      if ((m = ln.match(/^(#{1,4})\s+(.+)$/))) { flush(); out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); continue; }
+      if ((m = ln.match(/^\s*[-*+]\s+(.+)$/))) { if (list !== "ul") { flush(); out.push("<ul>"); list = "ul"; } out.push(`<li>${inline(m[1])}</li>`); continue; }
+      if ((m = ln.match(/^\s*\d+\.\s+(.+)$/))) { if (list !== "ol") { flush(); out.push("<ol>"); list = "ol"; } out.push(`<li>${inline(m[1])}</li>`); continue; }
+      flush(); out.push(`<p>${inline(ln)}</p>`);
+    }
+    flush();
+    return out.join("\n");
+  }
+
+  function kitPage(md, builtAt) {
+    const title = cs().title || "Untitled matter";
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Hearing kit — ${esc(title)}</title><style>
+      body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; font-size: 14px; }
+      h1 { font-size: 1.8rem; margin: 0 0 0.3rem; } h2 { font-size: 1.25rem; border-bottom: 2px solid #111; padding-bottom: 0.25rem; margin: 2rem 0 0.8rem; page-break-after: avoid; }
+      h3 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; page-break-after: avoid; }
+      .cover { text-align: center; padding: 2.5rem 0 1.8rem; border-bottom: 3px double #111; margin-bottom: 1.5rem; }
+      .cover .sub { color: #555; font-size: 0.9rem; letter-spacing: 0.04em; } .cover .meta { font-size: 0.85rem; color: #555; margin-top: 0.8rem; }
+      blockquote { border-left: 3px solid #999; margin: 0.6rem 0; padding: 0.1rem 0 0.1rem 0.9rem; color: #333; }
+      blockquote.caution { border: 2px solid #9a1c1c; background: #fdf3f2; color: #111; padding: 0.7rem 0.9rem; border-radius: 4px; page-break-inside: avoid; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0 1rem; } th, td { border: 1px solid #bbb; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; } th { background: #f0f0f0; }
+      a { color: #1a3f8a; word-break: break-word; } code { font-family: Menlo, monospace; font-size: 0.85em; background: #f2f2f2; padding: 0 0.25rem; }
+      li { margin-bottom: 0.25rem; }
+      .printbar { position: fixed; top: 0; right: 0; padding: 0.6rem 1rem; background: #111; } .printbar button { font-size: 0.9rem; padding: 0.4rem 1rem; cursor: pointer; }
+      @media print { .printbar { display: none; } body { padding: 0; font-size: 12.5px; } a { color: #111; } }
+    </style></head><body>
+    <div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div>
+    <div class="cover"><div class="sub">HEARING KIT · REPRESENTING MYSELF</div><h1>${esc(title)}</h1>
+      <div class="meta">Built ${esc(new Date(builtAt || Date.now()).toLocaleString())} with NoCase (nocase.org) from your own case file.<br>Print it. Phones are often not allowed in court.</div></div>
+    ${renderKit(md)}
+    </body></html>`;
+  }
+  function showKit(md, builtAt, w) {
+    const win = w || window.open("", "_blank");
+    if (!win) { if (typeof showToast === "function") showToast("Popup blocked. Allow popups for nocase.org, then use Open my hearing kit."); return; }
+    win.document.open(); win.document.write(kitPage(md, builtAt)); win.document.close();
+  }
+
+  async function loadDocuments() {
+    const docs = typeof listDocuments === "function" ? await listDocuments() : [];
+    let dir = null; try { dir = await folder().getDirectoryHandle("documents"); } catch {}
+    return Promise.all(docs.map(async d => {
+      let text = (window.docTextCache && window.docTextCache.get(d.name)) || null;
+      if (!text && dir && typeof window.extractText === "function") {
+        try { text = await window.extractText(await (await dir.getFileHandle(d.name)).getFile()); if (text && window.docTextCache) window.docTextCache.set(d.name, text); } catch {}
+      }
+      return { name: d.name, text: text || null };
+    }));
+  }
+
+  async function buildKit(btn, actBox) {
+    const brief = await readText("case-brief.md");
+    if (!brief || brief.length < 100) { if (typeof showToast === "function") showToast("Generate your case brief first. The hearing kit is built from it."); return; }
+    // Open the tab NOW, inside the click. After a 2-minute wait the browser would block it as a popup.
+    const w = window.open("", "_blank");
+    if (w) w.document.write("<p style='font-family:Georgia,serif;padding:2rem;font-size:16px'>Building your hearing kit from your case file… this takes about 2 minutes. Keep this tab and the NoCase tab open.</p>");
+    btn.disabled = true; const label = btn.textContent; btn.textContent = "Building your hearing kit… about 2 minutes";
+    try {
+      let obj = null; try { obj = JSON.parse(await readText("objections.json") || "null"); } catch {}
+      const resolved = obj?.resolved || [], resolutions = obj?.resolutions || {};
+      const objections = (obj?.objections || []).map(o => ({ id: o.id, threat: o.threat, objection: o.objection, response: o.response, neutralizer: o.neutralizer,
+        status: resolved.includes(o.id) ? "resolved" : "open", method: resolutions[o.id]?.method || null, note: resolutions[o.id]?.note || null, linkedDocs: resolutions[o.id]?.linkedDocs || [] }));
+      const step1 = cs().intake?.step1 || {};
+      const payload = { task: "generate_hearing_kit", representation: "self", caseTitle: cs().title || "Untitled matter",
+        caseDescription: step1.description || cs().caseDescription || "", caseType: step1.caseType || cs().caseType || "unknown",
+        userRole: step1.userRole || null, otherRole: step1.otherRole || null, brief, objections, documents: await loadDocuments() };
+      const r = await fetch(FUNCTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error("the server answered " + r.status);
+      const data = await r.json();
+      const kit = data?.result?.kit;
+      if (!kit) throw new Error("no kit came back");
+      await writeFileText(folder(), KIT_FILE, kit);
+      showKit(kit, Date.now(), w);
+      if (typeof showToast === "function") showToast("Hearing kit saved to your case folder. Print it from the new tab.");
+      renderActions(actBox);
+    } catch (e) {
+      if (w) { w.document.open(); w.document.write("<p style='font-family:Georgia,serif;padding:2rem'>The hearing kit didn't finish: " + esc(e.message) + ". Close this tab and press Build my hearing kit again.</p>"); w.document.close(); }
+      if (typeof showToast === "function") showToast("Hearing kit failed: " + e.message + ". Try again.");
+    } finally { btn.disabled = false; btn.textContent = label; }
+  }
+
+  async function renderActions(box) {
+    const who = cs().representation;
+    box.innerHTML = "";
+    if (who === "attorney") {
+      box.innerHTML = `<button class="obj-btn primary" data-act="packet">Compile attorney packet</button><span class="note">Brief, objections and responses, evidence index with fingerprints. Take it to the lawyer you choose.</span>`;
+      box.querySelector('[data-act="packet"]').onclick = () => document.getElementById("rdyPacketBtn")?.click();
+    } else if (who === "self") {
+      const info = await kitInfo();
+      box.innerHTML = `<button class="obj-btn primary" data-act="kit">${info ? "Rebuild my hearing kit" : "Build my hearing kit"}</button>` +
+        (info ? `<button class="obj-btn" data-act="open">Open my hearing kit</button><span class="note">Last built ${esc(new Date(info.at).toLocaleString())}. Rebuild after you add evidence or resolve objections.</span>`
+              : `<span class="note">About 2 minutes. How your hearing will go, your court, your script, exhibit list, the law to hand the judge, cautions.</span>`);
+      const kb = box.querySelector('[data-act="kit"]'); kb.onclick = () => buildKit(kb, box);
+      const ob = box.querySelector('[data-act="open"]');
+      if (ob) ob.onclick = async () => { const md = await readText(KIT_FILE); if (md) showKit(md, info.at); };
+    }
+  }
+
+  window.ncRenderWho = function (body) {
+    const who = cs().representation;
+    const card = document.createElement("div");
+    card.className = "rdy-who";
+    card.innerHTML = `<h4>Who is this case file for?</h4><p>Choose how you'll use it. You can change this any time.</p>
+      <div class="rdy-who-opts">
+        <button data-who="attorney" class="${who === "attorney" ? "on" : ""}"><b>An attorney I'm hiring</b><span>You get the attorney packet: your brief, the objections and your responses, and the evidence index.</span></button>
+        <button data-who="self" class="${who === "self" ? "on" : ""}"><b>I'm representing myself</b><span>You get a hearing kit: how the hearing will go, your court, your script, your exhibits, the law to hand the judge, and cautions.</span></button>
+      </div><div class="rdy-who-act"></div>`;
+    body.prepend(card);
+    const act = card.querySelector(".rdy-who-act");
+    card.querySelectorAll("[data-who]").forEach(b => b.addEventListener("click", async () => {
+      caseState.representation = b.dataset.who;
+      card.querySelectorAll("[data-who]").forEach(x => x.classList.toggle("on", x === b));
+      try { await saveCaseState(); } catch {}
+      renderActions(act);
+      if (window.refreshStepper) window.refreshStepper();
+    }));
+    renderActions(act);
+  };
 })();
 
 </script>
