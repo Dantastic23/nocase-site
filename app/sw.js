@@ -6,7 +6,7 @@
  * Bump CACHE on every deploy. Deploy here is a manual upload (see CLAUDE.md), so
  * nothing bumps this for you; a stale CACHE means users keep the old shell forever.
  */
-const CACHE = 'nocase-shell-v7';   // v7: Practice my hearing (v6: Who-is-this-for + Hearing kit; v5: photo fallback at load; v4: pick-a-folder copy; v3: HEIC)
+const CACHE = 'nocase-shell-v8';   // v8: one-step flow + Ask NoCase (v7: practice; v6: hearing kit; v5: photo fallback; v4: folder copy; v3: HEIC)
 
 const SHELL = [
   '/app/',

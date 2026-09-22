@@ -292,6 +292,53 @@
   .rdy-who-act:empty { display: none; }
   .rdy-who-act .note { font-size: 0.8rem; color: var(--ink-soft); }
   @media (max-width: 640px) { .rdy-who-opts { grid-template-columns: 1fr; } }
+  /* One-step flow shell (flow-spec Phase 3) */
+  .stepper.flow-on { flex-wrap: wrap; row-gap: 0.55rem; }
+  .stepper.flow-on .stepper-next { display: none; }
+  .stepper.flow-on .stepper-steps { gap: 0.25rem; flex-wrap: nowrap; overflow-x: auto; }
+  .fstep { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.22rem 0.55rem; border-radius: 99px; font-size: 0.72rem; color: rgba(245,242,237,0.45); white-space: nowrap; border: 1px solid transparent; background: none; font-family: inherit; cursor: default; }
+  .fstep .n { width: 1.15rem; height: 1.15rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem; border: 1px solid currentColor; }
+  .fstep.done { color: rgba(245,242,237,0.85); cursor: pointer; } .fstep.done .n { background: rgba(245,242,237,0.85); color: var(--ink); border-color: transparent; }
+  .fstep.current { color: var(--ink); background: var(--gold); cursor: pointer; } .fstep.current .n { border-color: var(--ink); }
+  .fstep.viewing { border-color: var(--gold); }
+  .fstep:disabled { opacity: 1; }
+  .flowcard { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; background: rgba(245,242,237,0.07); border: 1px solid rgba(245,242,237,0.14); border-radius: 7px; padding: 0.6rem 0.8rem; color: var(--paper); }
+  .flowcard .fc-text { flex: 1 1 320px; min-width: 0; }
+  .flowcard .fc-title { font-size: 0.95rem; font-weight: 600; } .flowcard .fc-title small { font-weight: 400; color: rgba(245,242,237,0.6); margin-right: 0.35rem; }
+  .flowcard .fc-inst { font-size: 0.8rem; color: rgba(245,242,237,0.75); margin-top: 0.1rem; line-height: 1.45; }
+  .flowcard .fc-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .flowcard button { font-family: inherit; font-size: 0.78rem; border-radius: 5px; padding: 0.4rem 0.8rem; cursor: pointer; border: 1px solid rgba(245,242,237,0.35); background: none; color: var(--paper); }
+  .flowcard button.pri { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 600; }
+  .flowcard button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .flowcard .fc-back { font-size: 0.75rem; color: var(--gold); background: none; border: none; padding: 0; text-decoration: underline; }
+  .fc-clock { font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 99px; background: rgba(245,242,237,0.12); white-space: nowrap; }
+  .fc-clock.soon { background: #b3261e; color: #fff; }
+  .fc-clock-form { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }
+  .fc-clock-form input { font: inherit; font-size: 0.75rem; padding: 0.25rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245,242,237,0.35); background: rgba(255,255,255,0.95); color: var(--ink); }
+  .workspace.flow-on .sidebar nav { display: none; }
+  .workspace.flow-on .sidebar.tools-open nav { display: block; }
+  .tools-toggle { display: none; width: 100%; text-align: left; font: inherit; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); background: none; border: 1px dashed var(--rule); border-radius: 5px; padding: 0.4rem 0.55rem; margin-bottom: 0.6rem; cursor: pointer; }
+  .workspace.flow-on .tools-toggle { display: block; }
+  .workspace.flow-on .sidebar h3 { display: none; }
+  @media (max-width: 900px) { .workspace.flow-on .sidebar.tools-open nav { display: flex; } .tools-toggle { width: auto; margin: 0; white-space: nowrap; } }
+  /* Ask NoCase (flow-spec Phase 3) */
+  .ask-fab { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 800; background: var(--ink); color: var(--paper); border: none; border-radius: 99px; padding: 0.7rem 1.1rem; font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+  .ask-fab[hidden] { display: none; }
+  .ask-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100%); z-index: 850; background: #fff; box-shadow: -10px 0 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+  .ask-panel[hidden] { display: none; }
+  .ask-head { padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; gap: 0.6rem; align-items: flex-start; }
+  .ask-head h4 { margin: 0; font-size: 1rem; } .ask-head p { margin: 0.15rem 0 0; font-size: 0.76rem; color: var(--ink-soft); }
+  .ask-warn { margin: 0.6rem 1rem 0; background: #fdf3f2; border: 1px solid #e3b4b0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.76rem; color: #7a1f1f; }
+  .ask-log { flex: 1; overflow-y: auto; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; background: #faf9f6; }
+  .ask-msg { max-width: 92%; padding: 0.5rem 0.7rem; border-radius: 8px; font-size: 0.88rem; line-height: 1.5; }
+  .ask-msg.user { align-self: flex-end; background: var(--ink); color: #fff; }
+  .ask-msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--rule); }
+  .ask-msg.bot h1, .ask-msg.bot h2, .ask-msg.bot h3 { font-size: 0.92rem; margin: 0.5rem 0 0.25rem; } .ask-msg.bot p { margin: 0.25rem 0; } .ask-msg.bot ul, .ask-msg.bot ol { margin: 0.25rem 0; padding-left: 1.1rem; }
+  .ask-add { align-self: stretch; background: #f1f6ff; border: 1px solid #b9cbee; border-radius: 7px; padding: 0.6rem 0.7rem; font-size: 0.82rem; }
+  .ask-add b { display: block; margin-bottom: 0.25rem; } .ask-add pre { white-space: pre-wrap; font-family: inherit; margin: 0.2rem 0 0.5rem; background: #fff; border: 1px solid #dbe4f5; border-radius: 5px; padding: 0.4rem 0.5rem; }
+  .ask-add .row { display: flex; gap: 0.4rem; }
+  .ask-foot { border-top: 1px solid var(--rule); padding: 0.55rem; display: flex; gap: 0.45rem; align-items: flex-end; }
+  .ask-foot textarea { flex: 1; resize: none; min-height: 2.5rem; max-height: 7rem; font: inherit; font-size: 0.88rem; padding: 0.5rem 0.6rem; border: 1px solid var(--rule); border-radius: 6px; }
   /* Practice my hearing (flow-spec Phase 2) */
   .prac { position: fixed; inset: 0; z-index: 900; background: rgba(14,14,14,0.55); display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .prac-box { background: #fff; width: min(760px, 100%); height: min(88vh, 900px); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -386,6 +433,7 @@
   </div>
   <aside class="sidebar">
     <h3>Workspace</h3>
+    <button class="tools-toggle" id="toolsToggle" type="button">All tools ▸</button>
     <nav>
       <a href="#" data-tab="brief"><span class="ic">★</span>Brief</a>
       <a href="#" class="active" data-tab="chat"><span class="ic">⌘</span>Chat with Claude</a>
@@ -1323,7 +1371,7 @@ function showToast(msg) {
 })();
 /* Brief tab (Phase B) */
 (function () {
-  function renderMd(md) { if (!md) return ""; const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); const lines = md.split(/\r?\n/); let out=[],inList=null; function close(){if(inList){out.push("</"+inList+">");inList=null;}} for(let i=0;i<lines.length;i++){const ln=lines[i]; if(/^\s*$/.test(ln)){close();continue;} if(/^---+\s*$/.test(ln)){close();out.push("<hr/>");continue;} let m; if((m=ln.match(/^(#{1,4})\s+(.+)$/))){close();out.push("<h"+m[1].length+">"+inl(esc(m[2]))+"</h"+m[1].length+">");continue;} if((m=ln.match(/^>\s+(.+)$/))){close();out.push("<blockquote>"+inl(esc(m[1]))+"</blockquote>");continue;} if((m=ln.match(/^[-*+]\s+(.+)$/))){if(inList!=="ul"){close();out.push("<ul>");inList="ul";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} if((m=ln.match(/^\d+\.\s+(.+)$/))){if(inList!=="ol"){close();out.push("<ol>");inList="ol";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} close(); out.push("<p>"+inl(esc(ln))+"</p>");} close(); return out.join("\n"); }
+  function renderMd(md) { if (!md) return ""; const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); const lines = md.split(/\r?\n/); let out=[],inList=null; function close(){if(inList){out.push("</"+inList+">");inList=null;}} for(let i=0;i<lines.length;i++){const ln=lines[i]; if(/^\s*<!--.*-->\s*$/.test(ln)) continue; if(/^\s*$/.test(ln)){close();continue;} if(/^---+\s*$/.test(ln)){close();out.push("<hr/>");continue;} let m; if((m=ln.match(/^(#{1,4})\s+(.+)$/))){close();out.push("<h"+m[1].length+">"+inl(esc(m[2]))+"</h"+m[1].length+">");continue;} if((m=ln.match(/^>\s+(.+)$/))){close();out.push("<blockquote>"+inl(esc(m[1]))+"</blockquote>");continue;} if((m=ln.match(/^[-*+]\s+(.+)$/))){if(inList!=="ul"){close();out.push("<ul>");inList="ul";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} if((m=ln.match(/^\d+\.\s+(.+)$/))){if(inList!=="ol"){close();out.push("<ol>");inList="ol";} out.push("<li>"+inl(esc(m[1]))+"</li>");continue;} close(); out.push("<p>"+inl(esc(ln))+"</p>");} close(); return out.join("\n"); }
   function inl(s){ s=s.replace(/\`([^\`]+)\`/g,"<code>$1</code>"); s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>"); s=s.replace(/(^|[^*])\*([^*]+)\*/g,"$1<em>$2</em>"); return s; }
   window.__ncRenderMd = renderMd;
   async function readBrief(){ const fh=(typeof folderHandle!=="undefined"&&folderHandle)||window.__nci_folderHandle; if(!fh) return null; try{ const h=await fh.getFileHandle("case-brief.md"); const f=await h.getFile(); return {text:await f.text(),lastModified:f.lastModified,size:f.size}; }catch(e){return null;} }
@@ -2144,6 +2192,245 @@ function showToast(msg) {
     }));
     renderActions(act);
   };
+})();
+
+/* ─── One step at a time (docs/flow-spec.md, Phase 3) ───────────────────── */
+// Sits ON TOP of the existing screens: each step drives the pane that already works.
+// Completion comes from the case itself (intake done, brief on disk, objections
+// resolved, choice made) plus a few explicit "I'm done" confirmations stored in
+// caseState.flow. The old 5-stage stepper still computes stage info for the chat;
+// this replaces what the user sees.
+(function () {
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const folder = () => (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+  const cs = () => (typeof caseState !== "undefined" && caseState) || {};
+  const flow = () => (cs().flow = cs().flow || {});
+  const sw = t => window.__ncSwitchTab && window.__ncSwitchTab(t);
+  async function exists(name) { try { const f = await (await folder().getFileHandle(name)).getFile(); return f.size > 50 ? f : null; } catch { return null; } }
+  async function setFlag(k) { flow()[k] = new Date().toISOString(); try { await saveCaseState(); } catch {} render(); }
+
+  const STEPS = [
+    { id: "case", chip: "Case", title: "Your case",
+      inst: "Tell NoCase what happened, who is involved, and what you want. Add your deadlines with the clock on the right.",
+      pri: "Tell NoCase about your case", act: () => window.NoCaseIntake && window.NoCaseIntake.open ? window.NoCaseIntake.open() : sw("chat"),
+      done: s => !!cs().intakeCompleted },
+    { id: "evidence", chip: "Evidence", title: "Your evidence",
+      inst: "Add every document you have: notices, letters, texts, emails, photos, receipts. NoCase accepts anything. Label each one if you can.",
+      pri: "Add documents", act: () => sw("documents"),
+      next: "That's everything for now", canNext: s => s.docCount > 0, needMsg: "Add at least one document first.",
+      done: s => s.docCount > 0 && !!flow().evidenceDone, flag: "evidenceDone" },
+    { id: "understood", chip: "Understood", title: "What NoCase understood",
+      inst: "Read NoCase's description of your case. Fix anything wrong with Edit, then confirm it's right.",
+      pri: s => s.brief ? "Read my brief" : "Build my brief", act: s => { sw("brief"); if (!s.brief) setTimeout(() => document.getElementById("briefRefreshBtn")?.click(), 300); },
+      next: "It's right: continue", canNext: s => s.brief, needMsg: "Build your brief first.",
+      done: s => s.brief && !!flow().briefConfirmed, flag: "briefConfirmed" },
+    { id: "facts", chip: "Facts", title: "Fact questions",
+      inst: "NoCase asks questions until it has every fact. Answer in the chat. No evidence needed yet, just what happened.",
+      pri: "Answer questions", act: () => sw("chat"),
+      next: "No more facts: test my case", canNext: () => true,
+      done: () => !!flow().factsDone, flag: "factsDone" },
+    { id: "redline", chip: "Test", title: "Test your case",
+      inst: "NoCase argues the other side. Answer each objection with evidence, accept a response, or leave it for your written explanation in the next step.",
+      pri: s => s.objCount ? "Open the objections" : "Test my case", act: () => sw("objections"),
+      next: "Continue", canNext: s => s.objCount > 0, needMsg: "Generate the objections first.",
+      done: s => s.objCount > 0 && (s.openHard === 0 || !!flow().redlineDone), flag: "redlineDone" },
+    { id: "explain", chip: "Explain", title: "Your explanation",
+      inst: "For objections you couldn't answer with evidence, write your explanation in the objection's note. Be specific: dates, names, what you saw yourself.",
+      pri: "Open the objections", act: () => sw("objections"),
+      next: "Continue", canNext: () => true,
+      done: () => !!flow().explainDone, flag: "explainDone" },
+    { id: "precedent", chip: "Precedent", title: "The law and similar cases",
+      inst: "Read the statutes and cases NoCase pulled for your case, including the ones that cut against you, in your brief's \"Law that applies\" section.",
+      pri: "See the law", act: () => { sw("brief"); setTimeout(() => { const h = [...document.querySelectorAll("#briefBody h2")].find(x => /law that applies/i.test(x.textContent)); h && h.scrollIntoView({ behavior: "smooth" }); }, 500); },
+      next: "Continue", canNext: s => s.brief,
+      done: () => !!flow().precedentDone, flag: "precedentDone" },
+    { id: "who", chip: "Who for", title: "Who is this case file for?",
+      inst: "An attorney you're hiring, or you representing yourself at the hearing.",
+      pri: "Choose", act: () => sw("readiness"),
+      done: () => !!cs().representation },
+    { id: "finish", chip: "Finish", title: s => cs().representation === "self" ? "Your hearing kit" : "Your attorney packet",
+      inst: s => cs().representation === "self" ? "Build your hearing kit, print it, and practice your hearing. Rebuild it whenever you add evidence." : "Compile your packet and take it to the lawyer you choose.",
+      pri: s => cs().representation === "self" ? "Open hearing kit" : "Open attorney packet", act: () => sw("readiness"),
+      done: () => false },
+  ];
+
+  let viewIdx = null;   // a finished step the user is looking back at
+  async function state() {
+    const st = { docCount: 0, brief: false, objCount: 0, openHard: 0 };
+    try { st.docCount = (await listDocuments()).length; } catch {}
+    st.brief = !!(await exists("case-brief.md"));
+    try {
+      const f = await exists("objections.json");
+      if (f) { const o = JSON.parse(await f.text()); const objs = o.objections || [], res = o.resolved || [];
+        st.objCount = objs.length; st.openHard = objs.filter(x => (x.threat === "critical" || x.threat === "serious") && !res.includes(x.id)).length; }
+    } catch {}
+    return st;
+  }
+  const val = (v, st) => typeof v === "function" ? v(st) : v;
+
+  function clockHtml() {
+    const d = (cs().deadlines || [])[0];
+    if (!d) return `<button type="button" data-f="clock-add">+ Add a deadline</button>`;
+    const days = Math.ceil((new Date(d.date + "T00:00:00") - new Date(new Date().toDateString())) / 864e5);
+    const txt = days > 1 ? `${esc(d.label)} in ${days} days` : days === 1 ? `${esc(d.label)} tomorrow` : days === 0 ? `${esc(d.label)} today` : `${esc(d.label)} was ${-days} days ago`;
+    return `<span class="fc-clock${days <= 7 ? " soon" : ""}" title="${esc(d.date)}">${txt}</span><button type="button" data-f="clock-add" title="Change deadline">✎</button>`;
+  }
+
+  let rendering = false;
+  async function render() {
+    const stepper = document.getElementById("stepper"), stepsEl = document.getElementById("stepperSteps");
+    if (!stepper || !stepsEl || rendering) return;
+    rendering = true;
+    try {
+      const st = await state();
+      const doneArr = STEPS.map(x => { try { return !!x.done(st); } catch { return false; } });
+      let cur = doneArr.findIndex(d => !d); if (cur < 0) cur = STEPS.length - 1;
+      if (viewIdx !== null && (viewIdx >= cur || !doneArr[viewIdx])) viewIdx = null;
+      const show = viewIdx ?? cur, step = STEPS[show];
+      // Tell the chat which step this is (fact questions get their own mode).
+      if (window.__ncStageInfo && STEPS[cur].id === "facts") window.__ncStageInfo.stage = "facts";
+      stepper.classList.add("flow-on"); document.getElementById("workspace")?.classList.add("flow-on");
+      stepsEl.innerHTML = STEPS.map((x, i) => {
+        const cls = i === cur ? "current" : doneArr[i] ? "done" : "";
+        return `<button type="button" class="fstep ${cls}${i === show && viewIdx !== null ? " viewing" : ""}" data-i="${i}" ${cls ? "" : "disabled"} title="${esc(val(x.title, st))}${cls ? "" : " (locked until earlier steps are done)"}"><span class="n">${doneArr[i] && i !== cur ? "✓" : i + 1}</span>${esc(x.chip)}</button>`;
+      }).join("");
+      // On a phone the chips scroll sideways; keep the current step in view.
+      const curChip = stepsEl.querySelector(".fstep.current");
+      if (curChip && stepsEl.scrollWidth > stepsEl.clientWidth) stepsEl.scrollLeft = Math.max(0, curChip.offsetLeft - stepsEl.offsetLeft - stepsEl.clientWidth / 2 + curChip.offsetWidth / 2);
+      let card = document.getElementById("flowCard");
+      if (!card) { card = document.createElement("div"); card.id = "flowCard"; card.className = "flowcard"; stepper.appendChild(card); }
+      const canNext = step.next && (step.canNext ? step.canNext(st) : true);
+      card.innerHTML = `<div class="fc-text"><div class="fc-title"><small>Step ${show + 1} of ${STEPS.length}${viewIdx !== null ? " · done" : ""}</small>${esc(val(step.title, st))}</div>
+          <div class="fc-inst">${esc(val(step.inst, st))}${step.next && !canNext && step.needMsg ? " " + esc(step.needMsg) : ""}</div>
+          ${viewIdx !== null ? `<button type="button" class="fc-back" data-f="back">Back to step ${cur + 1}: ${esc(val(STEPS[cur].title, st))}</button>` : ""}</div>
+        <div class="fc-actions"><button type="button" class="pri" data-f="pri">${esc(val(step.pri, st))}</button>
+          ${step.next && viewIdx === null ? `<button type="button" data-f="next" ${canNext ? "" : "disabled"}>${esc(step.next)} →</button>` : ""}</div>
+        <div class="fc-actions" data-f="clock">${clockHtml()}</div>`;
+      stepsEl.querySelectorAll(".fstep").forEach(b => b.onclick = () => {
+        const i = +b.dataset.i; if (b.disabled) return;
+        viewIdx = i === cur ? null : i; render(); val(STEPS[i].act, st) && 0;
+      });
+      card.querySelector('[data-f="pri"]').onclick = () => step.act(st);
+      const nb = card.querySelector('[data-f="next"]'); if (nb) nb.onclick = () => step.flag && setFlag(step.flag);
+      const bb = card.querySelector('[data-f="back"]'); if (bb) bb.onclick = () => { viewIdx = null; render(); STEPS[cur].act(st); };
+      card.querySelectorAll('[data-f="clock-add"]').forEach(b => b.onclick = () => clockForm(card));
+    } finally { rendering = false; }
+  }
+  function clockForm(card) {
+    const box = card.querySelector('[data-f="clock"]'), d = (cs().deadlines || [])[0] || { label: "Hearing", date: "" };
+    box.innerHTML = `<span class="fc-clock-form"><input type="text" value="${esc(d.label)}" aria-label="What is due" size="10"><input type="date" value="${esc(d.date)}" aria-label="Date"><button type="button" class="pri">Save</button><button type="button">Cancel</button></span>`;
+    const [lab, dt] = box.querySelectorAll("input"), [save, cancel] = box.querySelectorAll("button");
+    save.onclick = async () => { if (!dt.value) return dt.focus(); cs().deadlines = [{ label: lab.value.trim() || "Deadline", date: dt.value }]; try { await saveCaseState(); } catch {} render(); };
+    cancel.onclick = () => render();
+  }
+
+  // Keep the old stepper's data flowing (chat stage info), then draw the flow.
+  const oldRefresh = window.refreshStepper;
+  window.refreshStepper = async function () { if (oldRefresh) { try { await oldRefresh(); } catch {} } await render(); };
+  function init() {
+    // The old stepper's Next button handler would jump by 5-stage logic; retire it.
+    const nb = document.getElementById("stepperNextBtn"); if (nb) nb.replaceWith(nb.cloneNode(true));
+    document.getElementById("toolsToggle")?.addEventListener("click", e => {
+      const sb = e.target.closest(".sidebar"); sb.classList.toggle("tools-open");
+      e.target.textContent = sb.classList.contains("tools-open") ? "All tools ▾" : "All tools ▸";
+    });
+    if (!document.getElementById("workspace")?.classList.contains("hidden")) window.refreshStepper();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+
+/* ─── Ask NoCase (docs/flow-spec.md, Phase 3) ─────────────────────────────── */
+(function () {
+  // Function URL, not API Gateway: an answer that looks things up can take ~30s,
+  // right at Gateway's 29s ceiling (measured 29.1s on 2026-09-22).
+  const FUNCTION_URL = "https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/";
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const folder = () => (typeof folderHandle !== "undefined" && folderHandle) || window.__nci_folderHandle;
+  const cs = () => (typeof caseState !== "undefined" && caseState) || {};
+  const history = [];
+  let panel, log, ta, sendB, busy = false;
+  async function readText(n) { try { return await (await (await folder().getFileHandle(n)).getFile()).text(); } catch { return null; } }
+
+  function looksCriminal(brief) {
+    return /criminal|felony|misdemeanor|\bDWI\b|\bDUI\b|intoxicat|arrest|charged|prosecut/i.test(`${cs().caseType || ""} ${cs().caseDescription || ""} ${brief || ""}`);
+  }
+  function add(cls, html) { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+
+  async function addToBrief(update, card) {
+    const brief = await readText("case-brief.md");
+    if (!brief) { card.innerHTML = "<b>No brief yet.</b> Build your brief first, then ask again."; return; }
+    const block = `<!-- USER EDIT -->\n${update.text}\n`;
+    const lines = brief.split("\n");
+    const hi = lines.findIndex(l => l.trim().toLowerCase() === ("## " + update.section).toLowerCase() || l.trim().toLowerCase().startsWith(("## " + update.section).toLowerCase()));
+    let out;
+    if (hi >= 0) {
+      let j = hi + 1; while (j < lines.length && lines[j].trim() === "") j++;
+      out = [...lines.slice(0, j), ...block.split("\n"), ...lines.slice(j)].join("\n");
+    } else {
+      const di = lines.findIndex(l => /^\*This is the user's own working notes/.test(l));
+      const ins = ["", "## " + update.section, "", ...block.split("\n")];
+      out = di > 0 ? [...lines.slice(0, di), ...ins, ...lines.slice(di)].join("\n") : brief + "\n" + ins.join("\n");
+    }
+    await writeFileText(folder(), "case-brief.md", out);
+    card.innerHTML = `<b>Added to your brief</b> under “${esc(update.section)}”. It stays when the brief is rebuilt.`;
+    if (!document.querySelector('[data-pane="brief"]')?.hidden && window.__ncSwitchTab) window.__ncSwitchTab("brief");
+    if (window.refreshStepper) window.refreshStepper();
+  }
+
+  async function send() {
+    const q = ta.value.trim();
+    if (!q || busy) return;
+    busy = true; sendB.disabled = true; ta.value = "";
+    add("ask-msg user", esc(q).replace(/\n/g, "<br>"));
+    const wait = add("ask-msg bot", "<em>Looking into it… this can take up to 30 seconds when NoCase looks up law.</em>");
+    try {
+      const brief = await readText("case-brief.md");
+      let docs = []; try { docs = (await listDocuments()).map(d => ({ name: d.name, hasText: !!(window.docTextCache && window.docTextCache.get(d.name)) })); } catch {}
+      const step1 = cs().intake?.step1 || {};
+      const r = await fetch(FUNCTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        task: "chat", askMode: true, caseTitle: cs().title || "Untitled case", caseId: cs().caseId, caseType: cs().caseType || step1.caseType || "unknown",
+        caseDescription: cs().caseDescription || step1.description || "", caseBrief: brief || "", documents: docs, userMessage: q,
+        messageHistory: history.slice(-12), userRole: step1.userRole || null, otherRole: step1.otherRole || null,
+        caseStage: window.__ncStageInfo?.stage || null }) });
+      if (!r.ok) throw new Error("the server answered " + r.status);
+      const d = await r.json();
+      wait.innerHTML = (window.__ncRenderMd ? window.__ncRenderMd(d.reply || "") : esc(d.reply || ""));
+      history.push({ role: "user", content: q }, { role: "assistant", content: d.reply || "" });
+      if (d.briefUpdate && d.briefUpdate.text) {
+        const card = add("ask-add", `<b>Add this to your brief?</b>Section: ${esc(d.briefUpdate.section)}<pre>${esc(d.briefUpdate.text)}</pre><div class="row"><button class="obj-btn primary" data-a="add">Add to brief</button><button class="obj-btn" data-a="skip">Skip</button></div>`);
+        card.querySelector('[data-a="add"]').onclick = () => addToBrief(d.briefUpdate, card).catch(e => { card.innerHTML = "Couldn't update the brief: " + esc(e.message); });
+        card.querySelector('[data-a="skip"]').onclick = () => card.remove();
+      }
+    } catch (e) {
+      wait.innerHTML = "That didn't go through (" + esc(e.message) + "). Try again.";
+    } finally { busy = false; sendB.disabled = false; ta.focus(); }
+  }
+
+  async function open() {
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "ask-panel"; panel.hidden = true;
+      panel.innerHTML = `<div class="ask-head"><div><h4>Ask NoCase</h4><p>Ask anything about your evidence, the law, the hearing, or what to do next. Your place in the steps is kept.</p></div><button class="obj-btn" data-a="close">Close</button></div>
+        <div class="ask-warn" hidden></div><div class="ask-log"></div>
+        <div class="ask-foot"><textarea placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)"></textarea><button class="obj-btn primary" data-a="send">Send</button></div>`;
+      document.body.appendChild(panel);
+      log = panel.querySelector(".ask-log"); ta = panel.querySelector("textarea"); sendB = panel.querySelector('[data-a="send"]');
+      sendB.onclick = send;
+      ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+      panel.querySelector('[data-a="close"]').onclick = () => { panel.hidden = true; fab.hidden = false; };
+    }
+    const warn = panel.querySelector(".ask-warn");
+    if (looksCriminal(await readText("case-brief.md"))) {
+      warn.hidden = false;
+      warn.textContent = "What you type here is sent to NoCase's server to answer. This looks like a matter with possible criminal exposure: think before typing details of your own conduct.";
+    }
+    panel.hidden = false; fab.hidden = true; ta.focus();
+  }
+  const fab = document.createElement("button");
+  fab.className = "ask-fab"; fab.type = "button"; fab.textContent = "Ask NoCase"; fab.hidden = true; fab.onclick = open;
+  function sync() { const ws = document.getElementById("workspace"); fab.hidden = !ws || ws.classList.contains("hidden") || (panel && !panel.hidden); }
+  function init() { document.body.appendChild(fab); sync(); setInterval(sync, 1500); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 
 </script>
