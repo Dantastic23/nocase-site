@@ -24,6 +24,7 @@
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+  @font-face { font-family: 'Hand'; src: url('assets/fonts/hand.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
   /* ── The rule of this page: ROOMS ARE DARK, DOCUMENTS ARE PAPER. ─────────────
      Every section is a room (walnut, lamp light). --paper appears only where there
@@ -57,6 +58,7 @@
     --red-light: #f7e9e8;
     --gold: #80601a;
     --gold-light: #f6efdc;
+    --gilt-shine: #e9cf86;   /* sheen that sweeps fresh gold handwriting in the hero book */
     --green: #1e5c45;
     --green-light: #e6f0eb;
     /* Verdict colours for the headline, which sits on the dark plate. */
@@ -133,18 +135,23 @@
       linear-gradient(to bottom, rgba(29,19,13,0.45) 0%, rgba(29,19,13,0) 18%, rgba(29,19,13,0) 66%, var(--walnut) 100%),
       linear-gradient(to right, rgba(29,19,13,0.62) 0%, rgba(29,19,13,0.30) 46%, rgba(29,19,13,0.58) 100%);
   }
+  /* Headline on top, the book on the desk in the middle, the intake sheet under it
+     (flying-book hero, 2026-09-21). Sized so #ncRunBtn clears the fold at 1440x900. */
+  .lobby { padding-top: 96px; }
   .lobby-grid {
     position: relative; z-index: 1;
     max-width: 1160px; margin: 0 auto;
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 468px);
-    column-gap: 64px; align-items: center;
-    min-height: min(640px, calc(100svh - 190px));
+    display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center;
+    row-gap: 22px; text-align: center;
   }
+  .lobby-copy { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 0.4em; }
+  .lobby-copy .hero-desc { flex-basis: 100%; margin: 6px auto 0; font-size: 16px; }
+  .lobby-desk { width: 100%; max-width: 560px; text-align: left; }
   .hero-headline {
     font-family: var(--serif); font-weight: 700;
-    font-size: clamp(44px, 6.4vw, 88px); line-height: 1.02; letter-spacing: -0.02em;
+    font-size: clamp(40px, 4.4vw, 64px); line-height: 1.02; letter-spacing: -0.02em;
     color: var(--buckram); text-shadow: 0 2px 30px rgba(0,0,0,0.55);
-    margin-bottom: 14px;
+    margin-bottom: 0;
   }
   /* The patch script swaps the headline to a verdict and may wrap words in <em>.
      One colour for the whole line — a green "You" beside a gold "do" reads as a bug. */
@@ -152,7 +159,7 @@
   .hero-headline.verdict-good  { color: var(--green-bright); }
   .hero-headline.verdict-mixed { color: var(--gold-bright); }
   .hero-headline.verdict-bad   { color: var(--red-bright); }
-  .hero-sub { font-family: var(--serif); font-style: italic; font-size: clamp(22px, 2.6vw, 32px); line-height: 1.25; color: rgba(242,240,233,0.92); margin-bottom: 28px; }
+  .hero-sub { font-family: var(--serif); font-style: italic; font-size: clamp(22px, 2.6vw, 32px); line-height: 1.25; color: rgba(242,240,233,0.92); margin-bottom: 0; }
   .hero-desc { max-width: 30em; font-size: 18px; line-height: 1.6; color: var(--on-dark); }
 
   /* The intake sheet — the one loud element on the page. */
@@ -238,6 +245,54 @@
   .lobby-plate { animation: plateIn 600ms var(--ease) both; }
   .lobby-copy  { animation: riseIn 400ms var(--ease) 180ms both; }
   .lobby-desk  { animation: riseIn 400ms var(--ease) 270ms both; }
+
+  /* ── The flying book ──────────────────────────────────────────────────────
+     BASE STYLES ARE THE LANDED, OPEN STATE. The animations only run from the
+     shelf to here. The global reduced-motion rule kills every animation, which
+     then leaves an open book resting on the desk — never a closed cover. */
+  .hero-book {
+    position: relative; width: min(520px, 100%); height: 220px;
+    display: grid; grid-template-columns: 1fr 1fr; perspective: 1400px;
+    filter: drop-shadow(0 16px 18px rgba(0,0,0,0.55));
+    animation: bookFly 1400ms var(--ease) 400ms both;
+  }
+  .hero-book[hidden] { display: none; }
+  .hero-book-page {
+    background: var(--paper); border: 1px solid #d8cfb9; padding: 18px 20px;
+    font-family: 'Hand', cursive; color: var(--gold); text-align: left;
+  }
+  .hero-book-left { border-right: 0; border-radius: 3px 0 0 3px; box-shadow: inset -14px 0 18px -14px rgba(0,0,0,0.35); animation: leftShow 1ms linear 2050ms both; }
+  .hero-book-left p { font-size: 26px; line-height: 34px; }
+  .hero-book-right { border-left: 0; border-radius: 0 3px 3px 0; box-shadow: inset 14px 0 18px -14px rgba(0,0,0,0.35); }
+  .hero-book-ink {
+    height: 100%; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 21px; line-height: 28px;
+  }
+  .hero-book-ink .wet {
+    background: linear-gradient(100deg, var(--gold) 35%, var(--gilt-shine) 50%, var(--gold) 65%) 100% 0 / 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: inkSoak 900ms var(--ease) both;
+  }
+  .hero-book-cover {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 50%;
+    background: #6b1c1f linear-gradient(90deg, rgba(0,0,0,0.35), rgba(0,0,0,0) 12%);
+    border: 1px solid #3d0f11; border-radius: 0 3px 3px 0;
+    transform-origin: left center; backface-visibility: hidden;
+    transform: rotateY(-180deg);            /* landed state: open */
+    animation: coverOpen 500ms var(--ease) 1800ms both;
+  }
+  @keyframes bookFly {
+    0%   { opacity: 0; transform: translate(-420px, -380px) scale(0.3) rotate(-14deg); }
+    12%  { opacity: 1; }
+    72%  { transform: translate(0, -20px) scale(1.03) rotate(2deg); }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes coverOpen { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
+  @keyframes leftShow  { from { visibility: hidden; } to { visibility: visible; } }
+  @keyframes inkSoak {
+    from { opacity: 0; filter: blur(1.5px); background-position: 100% 0; }
+    to   { opacity: 1; filter: none; background-position: 0 0; }
+  }
 
   /* ── ROOM 2: POSTED NOTICE ── */
   .notice { background: var(--panel); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 18px 24px; }
@@ -397,12 +452,24 @@
     .intake-sheet textarea { min-height: 84px; }
     .lobby-plate img { object-position: 40% 60%; }
     .lobby-plate::after { background: linear-gradient(to bottom, rgba(29,19,13,0.35) 0%, rgba(29,19,13,0.15) 40%, var(--walnut) 96%); }
-    .lobby-grid { grid-template-columns: minmax(0, 1fr); min-height: 0; row-gap: 20px; }
+    .lobby-grid { grid-template-columns: minmax(0, 1fr); min-height: 0; row-gap: 20px; text-align: left; justify-items: stretch; }
     .lobby-copy { display: contents; }
     .hero-headline { order: 1; margin-bottom: 0; }
     .hero-sub { order: 2; margin-bottom: 0; }
     .lobby-desk { order: 3; }
     .hero-desc { order: 4; font-size: 17px; }
+    /* The book sits in the photo band above the headline (56px nav → 164px
+       headline), so the Analyze button stays on the first screen at 375x667. */
+    .hero-book { position: absolute; top: -104px; left: 50%; width: 220px; height: 96px; margin-left: -110px; order: 0; }
+    .hero-book-page { padding: 8px 10px; }
+    .hero-book-left p { font-size: 14px; line-height: 18px; }
+    .hero-book-ink { font-size: 12.5px; line-height: 16px; }
+    @keyframes bookFly {
+      0%   { opacity: 0; transform: translate(-120px, -40px) scale(0.4) rotate(-14deg); }
+      12%  { opacity: 1; }
+      72%  { transform: translate(0, -6px) scale(1.03) rotate(2deg); }
+      100% { opacity: 1; transform: none; }
+    }
     .room { padding: 64px 16px; }
     .notice { padding: 16px; }
     .notice p { text-align: left; }
@@ -467,6 +534,15 @@
       <h1 class="hero-headline">You don't have a&nbsp;case.</h1>
       <p class="hero-sub">Prove us wrong.</p>
       <p class="hero-desc">Tell us what happened. We argue both sides, tell you where you stand, and build the packet you'd hand a lawyer &mdash; before you spend a dollar on one.</p>
+    </div>
+
+    <!-- The flying book. Decorative mirror of #caseDesc in gold handwriting; the
+         textarea stays the real control. [hidden] until assets/hero-book.js runs,
+         so if that script fails the hero is exactly the old intake sheet. -->
+    <div class="hero-book" id="heroBook" aria-hidden="true" hidden>
+      <div class="hero-book-page hero-book-left"><p>Tell us what happened.</p></div>
+      <div class="hero-book-page hero-book-right"><div class="hero-book-ink" id="heroBookInk"></div></div>
+      <div class="hero-book-cover"></div>
     </div>
 
     <div class="lobby-desk">
