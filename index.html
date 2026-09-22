@@ -252,7 +252,7 @@
      then leaves an open book resting on the desk — never a closed cover. */
   .hero-book {
     position: relative; width: min(520px, 100%); height: 220px;
-    display: grid; grid-template-columns: 1fr 1fr; perspective: 1400px;
+    display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; perspective: 1400px;
     filter: drop-shadow(0 16px 18px rgba(0,0,0,0.55));
     animation: bookFly 1400ms var(--ease) 400ms both;
   }
@@ -260,13 +260,14 @@
   .hero-book-page {
     background: var(--paper); border: 1px solid #d8cfb9; padding: 18px 20px;
     font-family: 'Hand', cursive; color: var(--gold); text-align: left;
+    display: flex; flex-direction: column; box-sizing: border-box; height: 100%;
   }
   .hero-book-left { border-right: 0; border-radius: 3px 0 0 3px; box-shadow: inset -14px 0 18px -14px rgba(0,0,0,0.35); animation: leftShow 1ms linear 2050ms both; }
   .hero-book-left p { font-size: 26px; line-height: 34px; }
   .hero-book-right { border-left: 0; border-radius: 0 3px 3px 0; box-shadow: inset 14px 0 18px -14px rgba(0,0,0,0.35); }
   .hero-book-ink {
-    height: 100%; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere;
-    font-size: 21px; line-height: 28px;
+    flex: 1; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 21px; line-height: 28px; min-height: 0;
   }
   .hero-book-ink .wet {
     background: linear-gradient(100deg, var(--gold) 35%, var(--gilt-shine) 50%, var(--gold) 65%) 100% 0 / 300% 100%;
@@ -1095,6 +1096,7 @@ async function ncRunAnalysis() {
   }
 </script>
 
+<script src="/assets/hero-book.js?v=1" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
 </html>
