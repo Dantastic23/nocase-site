@@ -267,19 +267,20 @@
     box-shadow: inset 0 0 0 1px rgba(140,190,255,0.16);
     animation: screenOn 700ms var(--ease) 350ms both;
   }
-  /* The keyboard deck, seen from above the desk: a flat panel tipped toward the
-     viewer (rotateX), so it reads as a keyboard in perspective, wider at the front. */
-  .laptop-deck { position: relative; height: 128px; margin: 0 -6%; perspective: 900px; perspective-origin: 50% -260px; }
+  /* The keyboard deck, drawn as a trapezoid that tapers toward the front (Dan picked
+     this over a flared 3D version). Flat 2D on purpose: identical in every browser. */
+  .laptop-deck { position: relative; height: 112px; margin: 0 -1.5%; }
   .deck-top {
-    position: absolute; left: 0; right: 0; top: 0; height: 230px; transform-origin: 50% 0; transform: rotateX(-50deg);
-    background: linear-gradient(#d3d8de, #b3b9c1 70%, #9aa0a8); border-radius: 0 0 22px 22px;
-    border-bottom: 7px solid #6f757d; box-shadow: 0 10px 24px rgba(0,0,0,0.6);
+    position: absolute; inset: 0;
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+    background: linear-gradient(#d6dbe1, #b9bfc7 72%, #7c828a 94%, #5d636b);
+    filter: drop-shadow(0 12px 16px rgba(0,0,0,0.7));
   }
-  .keys { position: absolute; left: 7%; right: 7%; top: 7%; height: 52%; display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; padding: 8px; background: #8e949c; border-radius: 6px; }
+  .keys { position: absolute; left: 8.5%; right: 8.5%; top: 7%; height: 60%; display: grid; grid-template-columns: repeat(14, 1fr); grid-template-rows: repeat(5, 1fr); gap: 3px 4px; padding: 5px 6px; background: #8e949c; border-radius: 5px; }
   .keys i { background: #1c1f24; border-radius: 3px; box-shadow: inset 0 -2px 0 rgba(255,255,255,0.05); transition: background 160ms, box-shadow 160ms; }
   .keys i.space { grid-column: span 8; }
   .keys i.hit { background: #3a6fb8; box-shadow: 0 0 12px 2px rgba(120,180,255,0.8); }
-  .trackpad { position: absolute; left: 35%; right: 35%; top: 66%; height: 26%; border-radius: 10px; background: linear-gradient(#bfc5cc, #b0b6be); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); }
+  .trackpad { position: absolute; left: 39%; right: 39%; top: 72%; height: 17%; border-radius: 10px; background: linear-gradient(#bfc5cc, #b0b6be); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); }
   /* The desk: a strip of the library desk from the same photo, anchored under the
      laptop so the laptop, Lady Justice and the scales all stand on it at any width. */
   .desk-top {
@@ -534,9 +535,8 @@
     .lobby-desk { order: 3; }
     /* Phone laptop: thin bezel, no help line, so #ncRunBtn stays on the first screen. */
     .laptop-lid { padding: 8px 8px 12px; border-radius: 12px 12px 5px 5px; }
-    .laptop-deck { height: 56px; margin: 0 -4%; perspective: 360px; }
-    .deck-top { height: 124px; }
-    .keys { gap: 2px; padding: 4px; }
+    .laptop-deck { height: 64px; margin: 0 -3%; }
+    .keys { gap: 2px; padding: 3px; }
     .desk-top { top: calc(100% - 78px); height: 110px; width: 1100px; margin-left: -550px; }
     .laptop .intake-sheet { padding: 14px 14px 14px; }
     .laptop .sheet-head { margin: -14px -14px 12px; }
