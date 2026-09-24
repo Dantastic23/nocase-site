@@ -31,34 +31,47 @@
     if (!wide.matches) return;
     const s = rect(lid);
     const W = grid.clientWidth;
-    const top = s.top - 40, bottom = s.bottom + 30;
     const sx = s.left + s.width / 2, sy = s.top + s.height / 2;
     svg.textContent = '';
     paths = [];
+    const cx = s.left + s.width / 2;
+    // A fan rising out of the top of the screen: per side, outer (low, beside the
+    // laptop, above the statue / scales), middle, inner (high, over the screen).
+    const FAN = [
+      { dx: -230, dy: 20 },     // outer: centre relative to the lid's top-left corner
+      { dx: -60,  dy: -60 },
+      { dx: s.width * 0.22, dy: -105 }
+    ];
     ['left', 'right'].forEach((side, si) => {
       const group = cards.filter(c => c.dataset.side === side);
       const h = group[0].offsetHeight, w = group[0].offsetWidth;
-      const step = (bottom - top - h) / Math.max(group.length - 1, 1);
       group.forEach((c, i) => {
-        // A shallow arc: the middle tile hangs further out than the two ends.
-        const gap = i === 1 ? 110 : 64;
-        const x = side === 'left' ? Math.max(0, s.left - gap - w) : Math.min(W - w, s.right + gap);
-        const y = top + step * i;
+        const f = FAN[i];
+        let mx0 = s.left + f.dx;
+        if (side === 'right') mx0 = 2 * cx - mx0;
+        const x = Math.min(Math.max(mx0 - w / 2, -120), W - w + 120);
+        const y = s.top + f.dy - h / 2;
         c.style.left = x + 'px';
         c.style.top = y + 'px';
         c.style.setProperty('--from-x', (sx - x - w / 2) + 'px');
         c.style.setProperty('--from-y', (sy - y - h / 2) + 'px');
-        const delay = 1.1 + (i * 2 + si) * 0.12;
+        const delay = 1.1 + ((2 - i) * 2 + si) * 0.12;   // inner tiles leave the screen first
         c.style.setProperty('--card-delay', delay + 's');
-        // Wire from the tile's inner edge to the facing edge of the laptop lid.
-        const cx = side === 'left' ? x + w : x, cy = y + h / 2;
-        const tx = side === 'left' ? s.left : s.right;
-        const ty = Math.min(Math.max(cy, s.top + 24), s.bottom - 24);
-        const mx = (cx + tx) / 2;
+        // Stem out of the laptop: from the top edge up to a tile above the screen, or
+        // from the side edge across to a tile that hangs beside it.
         const p = document.createElementNS(NS, 'path');
-        p.setAttribute('d', `M${tx},${ty} C${mx},${ty} ${mx},${cy} ${cx},${cy}`);
+        if (y + h > s.top + 10) {
+          const ex = side === 'left' ? x + w : x, ey = y + h / 2;
+          const tx = side === 'left' ? s.left : s.right, ty = Math.max(ey + 40, s.top + 40);
+          const mx = (ex + tx) / 2;
+          p.setAttribute('d', `M${tx},${ty} C${mx},${ty} ${mx},${ey} ${ex},${ey}`);
+        } else {
+          const ex = x + w / 2, ey = y + h;
+          const tx = Math.min(Math.max(ex, s.left + 36), s.right - 36), ty = s.top;
+          p.setAttribute('d', `M${tx},${ty} C${tx},${ty - 40} ${ex},${ey + 40} ${ex},${ey}`);
+        }
         p.setAttribute('pathLength', '1');
-        // Relayouts (resize, results opening) rebuild the wires; don't replay the draw.
+        // Relayouts (resize, results opening) rebuild the stems; don't replay the draw.
         const wait = delay + 0.6 - since();
         p.style.setProperty('--line-delay', wait > 0 ? wait + 's' : '-1s');
         svg.appendChild(p);
