@@ -2433,7 +2433,9 @@ function showToast(msg) {
       done: () => !!flow().factsDone, flag: "factsDone" },
     { id: "redline", chip: "Test", title: "Test your case",
       inst: "NoCase argues the other side. Answer each objection with evidence, accept a response, or leave it for your written explanation in the next step.",
-      pri: s => s.objCount ? "Open the objections" : "Test my case", act: () => sw("objections"),
+      // Starts generating when there are none yet, like step 3's brief (2026-09-24 test: the
+      // button only opened the tab and the separate "Generate objections" was easy to miss).
+      pri: s => s.objCount ? "Open the objections" : "Test my case", act: s => { sw("objections"); if (!s.objCount) setTimeout(() => { const b = document.getElementById("objGenBtn"); if (b && !b.disabled) b.click(); }, 300); },
       next: "Continue", canNext: s => s.objCount > 0, needMsg: "Generate the objections first.",
       done: s => s.objCount > 0 && (s.openHard === 0 || !!flow().redlineDone), flag: "redlineDone" },
     { id: "explain", chip: "Explain", title: "Your explanation",
@@ -2733,5 +2735,5 @@ function showToast(msg) {
 })();
 
 </script>
-<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=2" defer></script></body>
+<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=3" defer></script></body>
 </html>

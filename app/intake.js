@@ -1513,6 +1513,19 @@
       // sees them raw. Skip only genuinely unsupported types (audio, video).
       const supportedExt = /\.(pdf|doc|docx|csv|xls|xlsx|html|htm|txt|md|png|jpg|jpeg|gif|webp|heic|heif|bmp|tif|tiff|avif)$/i;
       if (!supportedExt.test(file.name) && !(file.type || '').startsWith('image/')) return localText;
+      // Saved server readings, per case, in <case>/extracted-text/<name>.<size>.txt. Without
+      // this every page load re-sent every photo to the server (8 extra reads in one
+      // 2026-09-24 test run, ~20s each, billed each time).
+      const cacheName = file.name + '.' + file.size + '.txt';
+      const cacheDir = async create => {
+        const fh = window.__nci_folderHandle || (typeof folderHandle !== 'undefined' ? folderHandle : null);
+        try { return fh ? await fh.getDirectoryHandle('extracted-text', { create }) : null; } catch { return null; }
+      };
+      try {
+        const d = await cacheDir(false);
+        const cached = d ? await (await (await d.getFileHandle(cacheName)).getFile()).text() : '';
+        if (cached) return cached;
+      } catch { /* not read yet */ }
       try {
         let sendFile = file, sendName = file.name, sendMime = file.type;
         const norm = await normalizeImageForExtraction(file);
@@ -1540,6 +1553,7 @@
         const serverText = data && data.result && data.result.text ? data.result.text : '';
         if (serverText && serverText.length > 0) {
           console.log('[extract] Lambda returned', serverText.length, 'chars for', file.name);
+          try { const d = await cacheDir(true); if (d) { const w = await (await d.getFileHandle(cacheName, { create: true })).createWritable(); await w.write(serverText); await w.close(); } } catch { /* cache is best-effort */ }
           return serverText;
         }
       } catch (e) {
