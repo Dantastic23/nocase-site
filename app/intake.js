@@ -1433,6 +1433,7 @@
     return __libheifLoading;
   }
 
+  window.__ncImageToJpeg = (...a) => normalizeImageForExtraction(...a);   // hearing binder prints iPhone HEIC photos
   async function normalizeImageForExtraction(file) {
     const isImage = NCI_IMG_ANY.test(file.name) || (file.type || '').startsWith('image/');
     if (!isImage) return null;

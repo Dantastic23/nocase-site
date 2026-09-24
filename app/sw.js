@@ -6,12 +6,13 @@
  * Bump CACHE on every deploy. Deploy here is a manual upload (see CLAUDE.md), so
  * nothing bumps this for you; a stale CACHE means users keep the old shell forever.
  */
-const CACHE = 'nocase-shell-v15';  // v15: saved photo readings, step 5 auto-generates; v14: case switcher; v13: chat markdown + phone wording; v12: Ask button clears Send (v11: one folder per case on phones; new case never merges v10: chat retry + honest error; v9: explanations + precedent report (v8: flow + Ask; v7: practice; v6: kit; v5: photo fallback; v4: folder copy; v3: HEIC))
+const CACHE = 'nocase-shell-v17';  // v16: Hearing Day guide + printed binder; v15: saved photo readings, step 5 auto-generates; v14: case switcher; v13: chat markdown + phone wording; v12: Ask button clears Send (v11: one folder per case on phones; new case never merges v10: chat retry + honest error; v9: explanations + precedent report (v8: flow + Ask; v7: practice; v6: kit; v5: photo fallback; v4: folder copy; v3: HEIC))
 
 const SHELL = [
   '/app/',
   '/app/index.html',
   '/app/intake.js',
+  '/app/hearing-day.js',
   '/nocase-v2.3-patch.js',   // loaded by the shell as /nocase-v2.3-patch.js?v=N
   '/app/manifest.json',
   '/app/icon-192.png',

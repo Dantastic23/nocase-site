@@ -2292,12 +2292,14 @@ function showToast(msg) {
     } else if (who === "self") {
       const info = await kitInfo();
       box.innerHTML = `<button class="obj-btn primary" data-act="kit">${info ? "Rebuild my hearing kit" : "Build my hearing kit"}</button>` +
-        (info ? `<button class="obj-btn" data-act="open">Open my hearing kit</button><button class="obj-btn primary" data-act="practice">Practice my hearing</button>${(await readText(FEEDBACK_FILE)) ? `<button class="obj-btn" data-act="feedback">Last practice feedback</button>` : ""}<span class="note">Kit last built ${esc(new Date(info.at).toLocaleString())}. Rebuild after you add evidence or resolve objections.</span>`
+        (info ? `<button class="obj-btn primary" data-act="guide">Hearing Day guide</button><button class="obj-btn" data-act="binder">Print my binder (cue cards, kit, every document)</button><button class="obj-btn" data-act="open">Open my hearing kit</button><button class="obj-btn primary" data-act="practice">Practice my hearing</button>${(await readText(FEEDBACK_FILE)) ? `<button class="obj-btn" data-act="feedback">Last practice feedback</button>` : ""}<span class="note">Kit last built ${esc(new Date(info.at).toLocaleString())}. Rebuild after you add evidence or resolve objections.</span>`
               : `<span class="note">About 2 minutes. How your hearing will go, your court, your script, exhibit list, the law to hand the judge, cautions.</span>`);
       const kb = box.querySelector('[data-act="kit"]'); kb.onclick = () => buildKit(kb, box);
       const ob = box.querySelector('[data-act="open"]');
       if (ob) ob.onclick = async () => { const md = await readText(KIT_FILE); if (md) showKit(md, info.at); };
       const pb = box.querySelector('[data-act="practice"]'); if (pb) pb.onclick = () => openPractice(box);
+      const gb = box.querySelector('[data-act="guide"]'); if (gb) gb.onclick = () => window.ncHearingGuide && window.ncHearingGuide.open();
+      const bb = box.querySelector('[data-act="binder"]'); if (bb) bb.onclick = () => window.ncPrintBinder && window.ncPrintBinder();
       const fb = box.querySelector('[data-act="feedback"]'); if (fb) fb.onclick = async () => { const md = await readText(FEEDBACK_FILE); if (md) showKit(md, Date.now()); };
     }
   }
@@ -2735,5 +2737,5 @@ function showToast(msg) {
 })();
 
 </script>
-<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=3" defer></script></body>
+<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=4" defer></script><script src="/app/hearing-day.js?v=1" defer></script></body>
 </html>
