@@ -169,4 +169,13 @@
   if ('ResizeObserver' in window) new ResizeObserver(layout).observe(grid);
   else window.addEventListener('resize', layout);
   box.addEventListener('input', spark);
+
+  // A key on the laptop's keyboard lights up for every keystroke.
+  const keys = document.querySelectorAll('#deckKeys i:not(.space)');
+  const space = document.querySelector('#deckKeys .space');
+  if (keys.length && !still) box.addEventListener('input', e => {
+    const k = e.data === ' ' && space ? space : keys[Math.floor(Math.random() * keys.length)];
+    k.classList.add('hit');
+    setTimeout(() => k.classList.remove('hit'), 140);
+  });
 })();

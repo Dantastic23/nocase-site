@@ -256,7 +256,7 @@
      the screen content, not the lid, or the confirm step lands under the keyboard. */
   .laptop { position: relative; width: 100%; }
   .laptop-lid {
-    position: relative; padding: 14px 14px 20px;
+    position: relative; z-index: 1; padding: 14px 14px 20px;
     background: #0c0e11; border: 1px solid #2c323b; border-radius: 16px 16px 6px 6px;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 80px -10px rgba(90,150,255,0.38), 0 30px 50px -20px rgba(0,0,0,0.9);
   }
@@ -267,12 +267,26 @@
     box-shadow: inset 0 0 0 1px rgba(140,190,255,0.16);
     animation: screenOn 700ms var(--ease) 350ms both;
   }
-  .laptop-base {
-    position: relative; height: 14px; margin: 0 -8%;
-    background: linear-gradient(#dde1e6, #a3aab3 55%, #5f656d); border-radius: 2px 2px 16px 16px;
-    box-shadow: 0 20px 26px -8px rgba(0,0,0,0.85);
+  /* The keyboard deck, seen from above the desk: a flat panel tipped toward the
+     viewer (rotateX), so it reads as a keyboard in perspective, wider at the front. */
+  .laptop-deck { position: relative; height: 128px; margin: 0 -6%; perspective: 900px; perspective-origin: 50% -260px; }
+  .deck-top {
+    position: absolute; left: 0; right: 0; top: 0; height: 230px; transform-origin: 50% 0; transform: rotateX(-50deg);
+    background: linear-gradient(#d3d8de, #b3b9c1 70%, #9aa0a8); border-radius: 0 0 22px 22px;
+    border-bottom: 7px solid #6f757d; box-shadow: 0 10px 24px rgba(0,0,0,0.6);
   }
-  .laptop-base::before { content: ''; position: absolute; top: 0; left: 41%; width: 18%; height: 5px; background: #858b94; border-radius: 0 0 7px 7px; }
+  .keys { position: absolute; left: 7%; right: 7%; top: 7%; height: 52%; display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; padding: 8px; background: #8e949c; border-radius: 6px; }
+  .keys i { background: #1c1f24; border-radius: 3px; box-shadow: inset 0 -2px 0 rgba(255,255,255,0.05); transition: background 160ms, box-shadow 160ms; }
+  .keys i.space { grid-column: span 8; }
+  .keys i.hit { background: #3a6fb8; box-shadow: 0 0 12px 2px rgba(120,180,255,0.8); }
+  .trackpad { position: absolute; left: 35%; right: 35%; top: 66%; height: 26%; border-radius: 10px; background: linear-gradient(#bfc5cc, #b0b6be); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); }
+  /* The desk: a strip of the library desk from the same photo, anchored under the
+     laptop so the laptop, Lady Justice and the scales all stand on it at any width. */
+  .desk-top {
+    position: absolute; z-index: -1; left: 50%; width: 1900px; margin-left: -950px; top: calc(100% - 150px); height: 175px;
+    background: url('assets/desk.jpg') center / 100% 100% no-repeat;
+    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent); mask-image: linear-gradient(to bottom, #000 78%, transparent);
+  }
   @keyframes screenOn { from { filter: brightness(0.15); } to { filter: none; } }
   .laptop .intake-sheet { background: transparent; border: 0; box-shadow: none; color: var(--on-dark); padding: 14px 22px 18px; }
   .laptop .sheet-head { align-items: center; margin: -14px -22px 16px; padding: 9px 14px; border-bottom: 1px solid rgba(140,190,255,0.14); background: rgba(255,255,255,0.035); }
@@ -295,12 +309,20 @@
   .laptop .field-help { display: none; }   /* the screen intro does this job on the laptop */
   /* Lady Justice and the scales stand on the desk either side of the computer. They
      are cut-outs anchored to .laptop, so they stay beside it at every width. */
-  .desk-prop { position: absolute; bottom: 12px; pointer-events: none; filter: drop-shadow(0 14px 10px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
+  .desk-prop { position: absolute; bottom: 40px; pointer-events: none; filter: drop-shadow(0 14px 10px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
   .prop-justice { right: calc(100% + 64px); height: 320px; }
   .prop-scales  { left: calc(100% + 52px); height: 210px; }
   @media (max-width: 1099px) { .desk-prop { display: none; } }
   /* Room above the laptop for the tiles to rise into. */
   @media (min-width: 1200px) { .lobby-desk { margin-top: 185px; } }
+  /* Short laptop screens (1280x800): tighten so the keyboard shows above the fold. */
+  @media (min-width: 1200px) and (max-height: 860px) {
+    .lobby { padding-top: 72px; }
+    .lobby-desk { margin-top: 170px; }
+    .laptop .intake-sheet textarea { min-height: 84px; }
+    .laptop .screen-intro { font-size: 14px; margin-bottom: 10px; }
+    .laptop .field-label { font-size: 24px; margin-bottom: 8px; }
+  }
 
   /* ── Hologram tiles ───────────────────────────────────────────────────────
      What NoCase builds, as floating electronic panels (Dan's reference images):
@@ -512,7 +534,10 @@
     .lobby-desk { order: 3; }
     /* Phone laptop: thin bezel, no help line, so #ncRunBtn stays on the first screen. */
     .laptop-lid { padding: 8px 8px 12px; border-radius: 12px 12px 5px 5px; }
-    .laptop-base { height: 10px; margin: 0 -3%; }
+    .laptop-deck { height: 56px; margin: 0 -4%; perspective: 360px; }
+    .deck-top { height: 124px; }
+    .keys { gap: 2px; padding: 4px; }
+    .desk-top { top: calc(100% - 78px); height: 110px; width: 1100px; margin-left: -550px; }
     .laptop .intake-sheet { padding: 14px 14px 14px; }
     .laptop .sheet-head { margin: -14px -14px 12px; }
     .laptop .sheet-head-meta { display: none; }
@@ -576,7 +601,7 @@
   <!-- Decorative only: aria-hidden, no text, served locally. -->
   <picture class="lobby-plate" aria-hidden="true">
     <source media="(max-width: 920px)" srcset="assets/hero-library-m.jpg">
-    <img src="assets/hero-library-dusk.jpg" alt="" width="2048" height="1143" decoding="async" fetchpriority="high">
+    <img src="assets/hero-library-dusk.jpg" alt="" width="2010" height="1130" decoding="async" fetchpriority="high">
   </picture>
 
   <div class="lobby-grid">
@@ -649,7 +674,8 @@
         </div>
       </div>
       </div></div>
-      <div class="laptop-base" aria-hidden="true"></div>
+      <div class="laptop-deck" aria-hidden="true"><div class="deck-top"><div class="keys" id="deckKeys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="space"></i><i></i><i></i><i></i></div><div class="trackpad"></div></div></div>
+      <div class="desk-top" aria-hidden="true"></div>
       <img class="desk-prop prop-justice" src="assets/lady-justice.png" alt="" aria-hidden="true" decoding="async">
       <img class="desk-prop prop-scales" src="assets/scales.png" alt="" aria-hidden="true" decoding="async">
      </div>
@@ -1158,7 +1184,7 @@ async function ncRunAnalysis() {
   }
 </script>
 
-<script src="/assets/hero-cards.js?v=4" defer></script>
+<script src="/assets/hero-cards.js?v=5" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
 </html>
