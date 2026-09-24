@@ -325,12 +325,30 @@
   .case-lines path { fill: none; stroke: rgba(210,176,122,0.6); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; animation: lineDraw 700ms var(--ease) var(--line-delay, 3s) both; }
   .case-lines .spark { fill: var(--gilt-shine); filter: drop-shadow(0 0 6px var(--gilt-shine)); }
   .case-card {
-    position: absolute; width: 236px; padding: 12px 14px 13px;
+    position: absolute; width: 262px; padding: 12px 14px 13px;
     background: rgba(15,18,22,0.82); border: 1px solid rgba(210,176,122,0.55); border-radius: 3px;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 22px -4px rgba(210,176,122,0.30), 0 14px 26px -12px rgba(0,0,0,0.8);
     text-align: left; transition: border-color 300ms, box-shadow 300ms;
     animation: cardOut 900ms var(--ease) var(--card-delay, 2.4s) both, cardDrift 7s ease-in-out calc(var(--card-delay, 2.4s) + 900ms) infinite;
   }
+  /* Hologram treatment: a cool blue edge-light under the gold border, an icon, and a
+     slow sheen. Everything stays legible without the effects. */
+  .case-card { padding-left: 52px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 26px -4px rgba(110,170,255,0.28), 0 0 18px -6px rgba(210,176,122,0.35), 0 14px 26px -12px rgba(0,0,0,0.8), inset 0 0 22px -8px rgba(110,170,255,0.25); }
+  .case-card::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent 40%, rgba(160,200,255,0.10) 50%, transparent 60%) -120% 0 / 250% 100% no-repeat;
+    animation: sheen 6s ease-in-out var(--card-delay, 2.4s) infinite; }
+  .cc-icon { position: absolute; left: 14px; top: 14px; width: 26px; height: 26px; fill: none; stroke: var(--gilt-shine); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(233,207,134,0.6)); }
+  .case-lines .link { stroke: rgba(130,180,255,0.35); stroke-dasharray: 0.02 0.015; stroke-dashoffset: 0; animation: linkFlow 4s linear infinite, lineFade 700ms var(--ease) var(--line-delay, 3s) both; }
+  @keyframes sheen { 0%, 70% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+  @keyframes linkFlow { to { stroke-dashoffset: -0.35; } }
+  @keyframes lineFade { from { opacity: 0; } to { opacity: 1; } }
+  /* Motes: the floating points of light from the reference images, rising off the book. */
+  .case-motes { position: absolute; inset: 0; }
+  .case-motes i { position: absolute; width: var(--sz, 3px); height: var(--sz, 3px); border-radius: 50%;
+    background: var(--c, #e9cf86); box-shadow: 0 0 8px 2px var(--c, #e9cf86); opacity: 0;
+    animation: mote var(--dur, 7s) ease-in-out var(--dl, 0s) infinite; }
+  @keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx, 0), -160px); } }
   .case-card .cc-kind { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); margin-bottom: 4px; }
   .case-card b { display: block; font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--buckram); }
   .case-card span:last-child { display: block; font-size: 13px; line-height: 1.4; color: var(--on-dark); margin-top: 3px; }
@@ -600,12 +618,13 @@
          [hidden] until assets/hero-cards.js positions them. -->
     <div class="case-cards" id="caseCards" aria-hidden="true" hidden>
       <svg class="case-lines" id="caseLines"></svg>
-      <div class="case-card" data-side="left"><span class="cc-kind">Statute &middot; verified</span><b>Tex. Prop. Code &sect;&nbsp;92.103</b><span>Full text, pulled from the code itself</span></div>
-      <div class="case-card" data-side="left"><span class="cc-kind">Case law &middot; read in full</span><b>Texas opinions</b><span>Favorable and adverse, both listed</span></div>
-      <div class="case-card" data-side="left"><span class="cc-kind">Evidence index</span><b>Notices, photos, texts</b><span>Every page read and dated</span></div>
-      <div class="case-card" data-side="right"><span class="cc-kind">Both sides argued</span><b>Your case, and theirs</b><span>The strongest argument against you, first</span></div>
-      <div class="case-card" data-side="right"><span class="cc-kind">Hearing kit</span><b>Seven sections</b><span>Ready to print and carry in</span></div>
-      <div class="case-card" data-side="right"><span class="cc-kind">Practice hearing</span><b>A judge&rsquo;s questions</b><span>Rehearsed before the real one</span></div>
+      <div class="case-motes" id="caseMotes"></div>
+      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c2.8-1 5.6-1 8.5.8v12.2c-2.9-1.8-5.7-1.8-8.5-.8zM21 5.5c-2.8-1-5.6-1-8.5.8v12.2c2.9-1.8 5.7-1.8 8.5-.8z"/></svg><span class="cc-kind">Statute &middot; verified</span><b>Tex. Prop. Code &sect;&nbsp;92.103</b><span>Full text, pulled from the code itself</span></div>
+      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg><span class="cc-kind">Case law &middot; read in full</span><b>Texas opinions</b><span>Favorable and adverse, both listed</span></div>
+      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6M9 19h4"/></svg><span class="cc-kind">Evidence index</span><b>Notices, photos, texts</b><span>Every page read and dated</span></div>
+      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v17M7 20h10M5 6h14M5 6l-3 7h6zM19 6l-3 7h6z"/></svg><span class="cc-kind">Both sides argued</span><b>Your case, and theirs</b><span>The strongest argument against you, first</span></div>
+      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"/><path d="M3 11h18"/></svg><span class="cc-kind">Hearing kit</span><b>Seven sections</b><span>Ready to print and carry in</span></div>
+      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 4.5l6 6M11 7l6 6M12.2 5.8l-4.5 4.5 6 6 4.5-4.5M9.5 12.5L3 19"/></svg><span class="cc-kind">Practice hearing</span><b>A judge&rsquo;s questions</b><span>Rehearsed before the real one</span></div>
     </div>
 
     <div class="lobby-desk">

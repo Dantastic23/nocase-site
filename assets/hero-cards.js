@@ -63,7 +63,44 @@
         svg.appendChild(p);
         paths.push({ p, card: c });
       });
+      // Network links down each column: card to card, a slow flowing dash.
+      group.slice(1).forEach((c, i) => {
+        const a = group[i];
+        const ax = a.offsetLeft + w / 2, ay = a.offsetTop + h;
+        const cx = c.offsetLeft + w / 2, cy = c.offsetTop;
+        const l = document.createElementNS(NS, 'path');
+        l.setAttribute('d', `M${ax},${ay} C${ax},${(ay + cy) / 2} ${cx},${(ay + cy) / 2} ${cx},${cy}`);
+        l.setAttribute('pathLength', '1');
+        l.setAttribute('class', 'link');
+        const wait = 3.4 - (performance.now() - born) / 1000;
+        l.style.setProperty('--line-delay', wait > 0 ? wait + 's' : '-1s');
+        svg.appendChild(l);
+      });
     });
+    motes(b);
+  }
+
+  // Motes of light rising off the book, like dust in a lamp beam. Built once.
+  const moteBox = document.getElementById('caseMotes');
+  function motes(b) {
+    if (!moteBox || still) return;
+    if (!moteBox.childElementCount) {
+      for (let i = 0; i < 26; i++) {
+        const m = document.createElement('i');
+        const r = Math.random;
+        m.style.setProperty('--sz', (2 + r() * 3).toFixed(1) + 'px');
+        m.style.setProperty('--c', r() < 0.6 ? '#e9cf86' : '#8fc3ff');
+        m.style.setProperty('--dur', (5 + r() * 5).toFixed(1) + 's');
+        m.style.setProperty('--dl', (2.2 + r() * 6).toFixed(1) + 's');
+        m.style.setProperty('--dx', ((r() - 0.5) * 80).toFixed(0) + 'px');
+        m.dataset.fx = r(); m.dataset.fy = r();
+        moteBox.appendChild(m);
+      }
+    }
+    for (const m of moteBox.children) {
+      m.style.left = (b.left - 60 + m.dataset.fx * (b.width + 120)) + 'px';
+      m.style.top = (b.top + 30 + m.dataset.fy * b.height) + 'px';
+    }
   }
 
   // Typing: one spark per burst, travelling from the sheet out to the next card.
