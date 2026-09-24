@@ -2065,6 +2065,10 @@ function showToast(msg) {
   async function compilePacket() {
     const btn = document.getElementById("rdyPacketBtn");
     btn.disabled = true; btn.textContent = "Compiling…";
+    // Open the tab inside the click: printing every document takes a while, and a tab
+    // opened after that wait is blocked as a popup.
+    const w = window.open("", "_blank");
+    if (w) w.document.write("<p style='font-family:Georgia,serif;padding:2rem;font-size:16px'>Putting your attorney packet together, with every document printed in full…</p>");
     try {
       const g = await gather();
       const { total } = score(g);
@@ -2095,9 +2099,19 @@ function showToast(msg) {
         }).join("");
       }
 
-      const evRows = g.docs.map(d => {
+      // Every document printed in full, numbered to match the index (Dan, 2026-09-24).
+      const docsHtml = window.ncDocumentsHtml ? await window.ncDocumentsHtml(g.docs, (d, i) => "Document " + (i + 1)) : "";
+      // A page for the USER, not the lawyer: what to bring and what to say. Fixed wording plus
+      // their own deadline; no model text, and it never suggests or names a lawyer.
+      const dl = (cs.deadlines || [])[0];
+      const meetingHtml = `<section class="pk-meet"><h2>Before you hand this over: meeting your attorney</h2><p><em>This page is for you. Take it out before you give the packet to the lawyer if you like.</em></p>
+        <h3>Bring</h3><ul><li>This packet, printed.</li><li>The originals of every document in section IV.</li><li>Any letters or notices that arrived after ${esc(now.toLocaleDateString())}.</li></ul>
+        <h3>In the first two minutes, say</h3><blockquote>"I've put my case together. This packet has a summary of what happened, the arguments the other side is likely to make with my answers, and every document, numbered. ${dl && dl.date ? `My ${esc((dl.label || "next deadline").toLowerCase())} is on ${esc(new Date(dl.date + "T12:00").toLocaleDateString())}. ` : ""}I'd like to know what my options are and what you would do next."</blockquote>
+        <h3>Ask</h3><ul><li>"What are my options, and what deadlines apply to each one?"</li><li>"What would you charge, and what exactly does that cover?"</li><li>"Is anything in this packet wrong or missing? What else do you need from me?"</li><li>"What should I do, or not do, between now and my next date?"</li><li>"If we go forward, what happens next and when will I hear from you?"</li></ul>
+        <p>Write the answers down. You choose the lawyer; NoCase doesn't refer you to anyone.</p></section>`;
+      const evRows = g.docs.map((d, i) => {
         const m = d.meta || {};
-        return `<tr><td>${esc(d.name)}</td><td>${m.addedAt ? new Date(m.addedAt).toLocaleString() : "—"}</td><td>${fmtBytes(d.size)}</td><td class="pk-hash">${esc(m.sha256 || "—")}</td></tr>`;
+        return `<tr><td>Document ${i + 1}: ${esc(d.name)}</td><td>${m.addedAt ? new Date(m.addedAt).toLocaleString() : "—"}</td><td>${fmtBytes(d.size)}</td><td class="pk-hash">${esc(m.sha256 || "—")}</td></tr>`;
       }).join("");
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Attorney Packet — ${esc(title)}</title><style>
@@ -2119,6 +2133,8 @@ function showToast(msg) {
         .pk-printbar { position: fixed; top: 0; right: 0; padding: 0.6rem 1rem; background: #111; }
         .pk-printbar button { font-size: 0.9rem; padding: 0.4rem 1rem; cursor: pointer; }
         @media print { .pk-printbar { display: none; } body { padding: 0; } }
+        .pk-meet { border: 2px solid #111; padding: 0.4rem 1rem 0.8rem; margin-bottom: 1.5rem; page-break-after: always; }
+        ${window.ncDocumentsCss || ""}
       </style></head><body>
       <div class="pk-printbar"><button onclick="window.print()">Print / Save as PDF</button></div>
       <div class="pk-cover">
@@ -2128,6 +2144,7 @@ function showToast(msg) {
         <div class="score">Readiness: ${total}/100</div>
         <div class="pk-meta">Compiled ${now.toLocaleString()} · ${g.docs.length} evidence items · ${objs.length} objections analyzed (${resolved.length} resolved)<br>Prepared with NoCase (nocase.org) — assembled by the client with AI assistance</div>
       </div>
+      ${meetingHtml}
       <h2>I. Case Brief</h2>
       ${g.brief ? md(g.brief) : "<p><em>No case brief was generated.</em></p>"}
       <h2>II. Adversarial Analysis — Objections &amp; Responses</h2>
@@ -2136,16 +2153,16 @@ function showToast(msg) {
       <h2>III. Evidence Index &amp; Chain of Custody</h2>
       <p>Every document in the case folder, with the timestamp it was added and its SHA-256 fingerprint. A matching hash proves the file is bit-for-bit identical to the one indexed here.</p>
       <table><thead><tr><th>Document</th><th>Added</th><th>Size</th><th>SHA-256</th></tr></thead><tbody>${evRows || '<tr><td colspan="4">No documents.</td></tr>'}</tbody></table>
+      ${docsHtml ? `<h2>IV. The Documents</h2><p>Each document in full, in the order of the index above.</p>${docsHtml}` : ""}
       <div class="pk-disclaimer">This packet is the client's own working notes assembled with AI assistance (NoCase by Benchmark). It is not legal advice, not privileged communication, and not a substitute for licensed counsel. All AI-drafted analysis should be independently verified. Citations, if any, must be confirmed before reliance.</div>
       </body></html>`;
 
-      const w = window.open("", "_blank");
       if (!w) throw new Error("Popup blocked — allow popups for nocase.org and try again.");
-      w.document.write(html);
-      w.document.close();
+      w.document.open(); w.document.write(html); w.document.close();
       if (typeof showToast === "function") showToast("Packet compiled — use Print / Save as PDF in the new tab");
     } catch (e) {
       if (typeof showToast === "function") showToast("Packet failed: " + e.message);
+      if (w) { w.document.open(); w.document.write("<p style='font-family:Georgia,serif;padding:2rem'>The packet didn't finish: " + esc(e.message) + ". Close this tab and try again.</p>"); w.document.close(); }
     } finally {
       btn.disabled = false; btn.textContent = "Compile attorney packet";
     }
@@ -2287,7 +2304,7 @@ function showToast(msg) {
     const who = cs().representation;
     box.innerHTML = "";
     if (who === "attorney") {
-      box.innerHTML = `<button class="obj-btn primary" data-act="packet">Compile attorney packet</button><span class="note">Brief, objections and responses, evidence index with fingerprints. Take it to the lawyer you choose.</span>`;
+      box.innerHTML = `<button class="obj-btn primary" data-act="packet">Compile attorney packet</button><span class="note">A page on meeting your attorney (what to bring, what to say, what to ask), then your brief, the objections and your answers, the evidence index, and every document printed in full. Take it to the lawyer you choose.</span>`;
       box.querySelector('[data-act="packet"]').onclick = () => document.getElementById("rdyPacketBtn")?.click();
     } else if (who === "self") {
       const info = await kitInfo();
@@ -2737,5 +2754,5 @@ function showToast(msg) {
 })();
 
 </script>
-<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=4" defer></script><script src="/app/hearing-day.js?v=1" defer></script></body>
+<script src="/nocase-v2.3-patch.js?v=1" defer></script><script src="/app/intake.js?v=4" defer></script><script src="/app/hearing-day.js?v=2" defer></script></body>
 </html>

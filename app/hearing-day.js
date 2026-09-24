@@ -230,4 +230,18 @@
     }
   }
   window.ncPrintBinder = printBinder;
+  // Used by the attorney packet: every document, printed in full, labelled by `label(d, i)`.
+  window.ncDocumentsHtml = async function (docs, label) {
+    const dir = await folder().getDirectoryHandle("documents");
+    const out = [];
+    for (let i = 0; i < docs.length; i++) {
+      const d = docs[i], f = await (await dir.getFileHandle(d.name)).getFile();
+      const added = d.meta && d.meta.addedAt ? new Date(d.meta.addedAt).toLocaleString() : "";
+      out.push(`<section class="exh"><div class="exh-head"><div class="exh-no">${esc(label(d, i))}</div><div class="exh-name">${esc(d.name)}</div><div class="exh-meta">${added ? "Added " + esc(added) + " · " : ""}${d.meta && d.meta.sha256 ? "SHA-256 " + esc(d.meta.sha256.slice(0, 16)) + "…" : ""}</div></div>${await renderDoc(f)}</section>`);
+    }
+    return out.join("");
+  };
+  window.ncDocumentsCss = `.exh { page-break-before: always; break-before: page; } .exh-head { border: 2px solid #111; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; } .exh-no { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; } .exh-name { font-size: 0.95rem; } .exh-meta { font-size: 0.75rem; color: #555; }
+    .doc-img, .doc-page { display: block; max-width: 100%; max-height: 9.3in; margin: 0 auto 0.6rem; object-fit: contain; page-break-inside: avoid; } .doc-page { page-break-after: always; } .doc-page:last-child { page-break-after: auto; }
+    .doc-txt { white-space: pre-wrap; font-family: Georgia, serif; font-size: 12.5px; line-height: 1.5; } .miss { border: 1px dashed #999; padding: 1rem; font-style: italic; }`;
 })();
