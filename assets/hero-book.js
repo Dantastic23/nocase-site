@@ -44,7 +44,13 @@
     for (const side of ['left', 'right']) {
       const el = book.querySelector('.book-' + side);
       const q = PAGES[side].map(([fx, fy]) => [fx * W, fy * H]);
-      el.style.transform = matrixFor(el.offsetWidth, el.offsetHeight, q);
+      // Box = the page's average on-screen size, so the warp barely scales the text.
+      const w = (Math.hypot(q[1][0] - q[0][0], q[1][1] - q[0][1]) + Math.hypot(q[2][0] - q[3][0], q[2][1] - q[3][1])) / 2;
+      const h = (Math.hypot(q[3][0] - q[0][0], q[3][1] - q[0][1]) + Math.hypot(q[2][0] - q[1][0], q[2][1] - q[1][1])) / 2;
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.style.setProperty('--fs', Math.max(7, w / 15).toFixed(2) + 'px');
+      el.style.transform = matrixFor(w, h, q);
     }
   }
 
