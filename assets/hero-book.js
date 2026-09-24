@@ -1,16 +1,11 @@
-// The open book on the desk in the NoCase hero. Its left page shows the rights
-// amendments (real text, cycling); its right page writes whatever the visitor types
-// into #caseDesc, in gold handwriting. The pages are flat HTML boxes warped onto the
-// photographed pages with a perspective transform (a homography from a rectangle to
-// the page's four measured corners). Decorative and aria-hidden; READS the textarea,
-// never writes it. If this file fails, the book stays [hidden].
+// The open book on the desk in the NoCase hero: the First Amendment on the left page,
+// the Fourth on the right. The pages are flat HTML boxes warped onto the photographed
+// pages with a perspective transform (a homography from a rectangle to each page's
+// four measured corners). Decorative and aria-hidden. If this file fails, the book
+// stays [hidden].
 (function () {
   const book = document.getElementById('deskBook');
-  const box = document.getElementById('caseDesc');
-  const ink = document.getElementById('bookInk');
-  const rights = document.getElementById('bookRights');
-  if (!book || !box || !ink || !rights) return;
-  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!book) return;
 
   // Page corners in the book photo, as fractions of its width/height:
   // top-left, top-right, bottom-right, bottom-left. Re-measure if book.webp changes.
@@ -53,40 +48,8 @@
     }
   }
 
-  // Right page: gold handwriting that follows the intake box.
-  let shown = '';
-  function write() {
-    const text = box.value;
-    if (text === shown) return;
-    book.classList.toggle('has-ink', !!text);
-    if (still || !text.startsWith(shown)) {
-      ink.textContent = text;                    // delete, paste-over, restore: redraw plainly
-    } else {
-      const wet = document.createElement('span');
-      wet.className = 'wet';
-      wet.textContent = text.slice(shown.length);
-      wet.addEventListener('animationend', () => { wet.replaceWith(wet.textContent); ink.normalize(); }, { once: true });
-      ink.appendChild(wet);
-    }
-    shown = text;
-    ink.scrollTop = ink.scrollHeight;            // the page shows its newest lines
-  }
-  box.addEventListener('input', write);
-  setInterval(write, 500);                       // draft restores set .value without an event
-
-  // Left page: the amendments, one at a time.
-  const items = Array.from(rights.children);
-  let at = 0;
-  items.forEach((el, i) => { el.hidden = i !== 0; });
-  if (!still && items.length > 1) setInterval(() => {
-    items[at].hidden = true;
-    at = (at + 1) % items.length;
-    items[at].hidden = false;
-  }, 7000);
-
   book.hidden = false;
   const img = book.querySelector('img');
   if (img.complete) place(); else img.addEventListener('load', place);
   if ('ResizeObserver' in window) new ResizeObserver(place).observe(book);
-  write();
 })();
