@@ -11,7 +11,7 @@
   const lid = document.querySelector('.laptop-lid');
   const box = document.getElementById('caseDesc');
   if (!wrap || !svg || !grid || !lid || !box) return;
-  const wide = window.matchMedia('(min-width: 1200px)');
+  const wide = window.matchMedia('(min-width: 1024px)');
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const cards = Array.from(wrap.querySelectorAll('.case-card'));
   const NS = 'http://www.w3.org/2000/svg';
@@ -37,9 +37,11 @@
     const cx = s.left + s.width / 2;
     // A fan rising out of the top of the screen: per side, outer (low, beside the
     // laptop, above the statue / scales), middle, inner (high, over the screen).
+    // Outer tiles scale in on narrower windows so they stay on screen.
+    const reach = Math.min(230, s.left + 40);
     const FAN = [
-      { dx: -230, dy: 20 },     // outer: centre relative to the lid's top-left corner
-      { dx: -60,  dy: -60 },
+      { dx: -reach, dy: 20 },   // outer: centre relative to the lid's top-left corner
+      { dx: -reach * 0.26, dy: -60 },
       { dx: s.width * 0.22, dy: -105 }
     ];
     ['left', 'right'].forEach((side, si) => {
@@ -49,7 +51,7 @@
         const f = FAN[i];
         let mx0 = s.left + f.dx;
         if (side === 'right') mx0 = 2 * cx - mx0;
-        const x = Math.min(Math.max(mx0 - w / 2, -120), W - w + 120);
+        const x = Math.min(Math.max(mx0 - w / 2, 6 - grid.getBoundingClientRect().left), W - w - 6 + (innerWidth - grid.getBoundingClientRect().right));
         const y = s.top + f.dy - h / 2;
         c.style.left = x + 'px';
         c.style.top = y + 'px';
