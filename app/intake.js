@@ -842,7 +842,7 @@
         if (navigator.storage && typeof navigator.storage.getDirectory === 'function') {
           try {
             const root = await navigator.storage.getDirectory();
-            const handle = await root.getDirectoryHandle('nocase-case', { create: true });
+            const handle = await root.getDirectoryHandle(localStorage.getItem('ncOpfsCaseDir') || 'nocase-case', { create: true });   // current case's folder (see opfsCaseFolder)
             try { await navigator.storage.persist(); } catch {}
             window.__nci_folderHandle = handle;
             localStorage.setItem('ncOpfsCase', '1');

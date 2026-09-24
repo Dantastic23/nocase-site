@@ -71,6 +71,8 @@
   .onboarding h1 { font-size: 2.4rem; line-height: 1.05; margin-bottom: 0.6rem; }
   .onboarding h1 .accent { font-style: italic; color: var(--ink-muted); font-weight: 600; }
   .onboarding p { color: var(--ink-soft); font-size: 1rem; max-width: 480px; margin: 0 auto 1.6rem; }
+  .new-case-note { margin: 0 0 18px; padding: 12px 14px; border: 1px solid #c2d4f6; background: #eef3fc; border-radius: 8px; font-size: 14px; line-height: 1.5; color: #1d2a44; }
+  .new-case-note a { display: inline-block; margin-top: 6px; }
   .onboarding-cta { display: inline-flex; padding: 0.85rem 1.6rem; background: var(--ink); color: var(--paper); border: none; border-radius: 6px; font-family: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; }
   .onboarding-cta:hover { background: #000; }
   .onboarding-fine { font-size: 0.8rem; color: var(--ink-muted); margin-top: 1.2rem; line-height: 1.55; }
@@ -414,6 +416,10 @@
     <h1>Pick a folder for your <span class="accent">case file.</span></h1>
     <p>Most apps keep your files on their servers. NoCase doesn't. A legal matter is sensitive, so your case file stays in a folder on your own computer, and you choose which one. It works like picking where to save a document. NoCase reads and writes only inside that folder.</p>
     <p>When you ask a question, only the text needed to answer it is sent for analysis. We don't keep a copy of your case file.</p>
+    <div class="new-case-note" id="newCaseNote" hidden>
+      <strong>This is a new case.</strong> The folder NoCase last used holds a different case, so pick a new, empty folder for this one (for example, make a new folder inside Documents/NoCase). Your other case stays where it is.
+      <a href="#" id="keepOldCase">Keep working on my other case instead</a>
+    </div>
     <button class="onboarding-cta" id="pickFolderBtn">Pick a folder</button>
     <div class="onboarding-fine">
       Not sure which folder? Make a new one called <strong>NoCase</strong> in Documents and pick that. We'll create case files inside it. You can take this folder anywhere — back it up, share it with your attorney, walk away from the service, and you still own everything.
@@ -586,9 +592,15 @@ function browserSupportsFS() {
 function supportsOPFS() {
   return !!(navigator.storage && typeof navigator.storage.getDirectory === 'function');
 }
-async function opfsCaseFolder() {
+// Each case on a phone has its own folder in device storage (Dan, 2026-09-24). Before
+// this every "new case" reopened the one 'nocase-case' folder, so a second case's
+// documents would have mixed with the first's. The current case's folder name lives in
+// localStorage 'ncOpfsCaseDir'; the first case keeps the old name so nothing is lost.
+async function opfsCaseFolder(fresh) {
   const root = await navigator.storage.getDirectory();
-  const handle = await root.getDirectoryHandle('nocase-case', { create: true });
+  let name = localStorage.getItem('ncOpfsCaseDir') || 'nocase-case';
+  if (fresh) { name = 'nocase-case-' + Date.now(); localStorage.setItem('ncOpfsCaseDir', name); }
+  const handle = await root.getDirectoryHandle(name, { create: true });
   try { await navigator.storage.persist(); } catch {} // ask browser not to evict
   return handle;
 }
@@ -1156,6 +1168,30 @@ async function initWorkspace() {
 
   // Apply any pending homepage handoff (URL params / localStorage) — once.
   const handoff = consumeHomepageHandoff();
+  // A handoff describing a DIFFERENT case must never merge into the case that is open
+  // (it used to: the new description was dropped and the new documents landed beside
+  // the old case's). Phone: open a fresh folder. Computer: ask for a new folder.
+  const norm = t => String(t || '').replace(/\s+/g, ' ').trim();
+  if (handoff.caseDescription && norm(handoff.caseDescription) !== norm(caseState.caseDescription) &&
+      (norm(caseState.caseDescription) || (await listDocuments()).length > 0)) {
+    if (window.__ncOPFS) {
+      folderHandle = await opfsCaseFolder(true);
+      await loadCaseState();
+      await loadChat();
+      setTimeout(() => showToast('Started a new case. Your previous case is still saved on this device.'), 800);
+    } else {
+      try {
+        localStorage.setItem('nocaseHandoff', JSON.stringify({ desc: handoff.caseDescription, type: handoff.caseType || undefined, title: handoff.title || undefined }));
+      } catch {}
+      const note = document.getElementById('newCaseNote');
+      if (note) note.hidden = false;
+      document.getElementById('workspace').classList.add('hidden');
+      document.getElementById('onboarding').classList.remove('hidden');
+      return;
+    }
+  }
+  const newCaseNote = document.getElementById('newCaseNote');
+  if (newCaseNote) newCaseNote.hidden = true;
   let caseChanged = false;
   if (handoff.caseType && (!caseState.caseType || caseState.caseType === 'unknown')) {
     caseState.caseType = handoff.caseType;
@@ -1214,6 +1250,11 @@ async function runIntake() {
 }
 
 /* ---------- Wire UI ---------- */
+document.getElementById('keepOldCase').addEventListener('click', e => {
+  e.preventDefault();
+  try { localStorage.removeItem('nocaseHandoff'); } catch {}
+  location.reload();
+});
 document.getElementById('pickFolderBtn').addEventListener('click', async () => {
   if (document.getElementById('pickFolderBtn').dataset.restore) {
     // Re-request perm on the existing handle

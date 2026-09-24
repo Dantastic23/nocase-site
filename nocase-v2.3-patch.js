@@ -180,7 +180,15 @@
   const SAVE_KEY = 'ncLastAnalysis';
   // Read by /app/ (getHandoff in app/index.html) so the description carries over.
   const HANDOFF_KEY = 'nocaseHandoff';
-  const APP_CASE_TYPE = { breach_of_contract: 'contract_dispute', business_dispute: 'business_dispute', defamation: 'defamation' };
+  // Home-page type -> /app/ type. Only clear matches; anything else arrives as 'unknown'
+  // and the app asks the user (a wrong guess steers every chat answer).
+  const APP_CASE_TYPE = {
+    breach_of_contract: 'contract_dispute', construction_defect: 'contract_dispute',
+    business_dispute: 'business_dispute', defamation: 'defamation', employment: 'employment',
+    felony: 'criminal_felony',
+    divorce: 'family_law', child_custody: 'family_law', child_support: 'family_law', protective_order: 'family_law', adoption: 'family_law', guardianship: 'family_law',
+    landlord_tenant: 'real_estate', hoa_dispute: 'real_estate'
+  };
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => (
