@@ -24,7 +24,6 @@
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-  @font-face { font-family: 'Hand'; src: url('assets/fonts/hand.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
   /* ── The rule of this page: ROOMS ARE DARK, DOCUMENTS ARE PAPER. ─────────────
      Every section is a room (walnut, lamp light). --paper appears only where there
@@ -125,7 +124,7 @@
      this section and can make it several screens tall, and a cover-fit image on a
      3000px box would zoom into one blurry bookshelf. */
   .lobby { position: relative; background: var(--walnut); padding: 124px 24px 64px; overflow: hidden; }
-  .lobby-plate { position: absolute; top: 0; left: 0; right: 0; height: 960px; z-index: 0; pointer-events: none; }
+  .lobby-plate { position: absolute; top: 0; left: 0; right: 0; height: 820px; z-index: 0; pointer-events: none; }
   .lobby-plate img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 50%; display: block; }
   /* Scrim does contrast work, not decoration: the headline sits on the gallery and
      ladder, the brightest part of the plate. Lighten the left stop and the headline
@@ -148,7 +147,7 @@
   }
   .lobby-copy { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 0.4em; }
   .lobby-copy .hero-desc { flex-basis: 100%; margin: 6px auto 0; font-size: 16px; }
-  .lobby-desk { width: 100%; max-width: 560px; text-align: left; }
+  .lobby-desk { width: 100%; max-width: 640px; text-align: left; margin-top: 8px; }
   .hero-headline {
     font-family: var(--serif); font-weight: 700;
     font-size: clamp(40px, 4.4vw, 64px); line-height: 1.02; letter-spacing: -0.02em;
@@ -248,119 +247,97 @@
   .lobby-copy  { animation: riseIn 400ms var(--ease) 180ms both; }
   .lobby-desk  { animation: riseIn 400ms var(--ease) 270ms both; }
 
-  /* ── The flying book ──────────────────────────────────────────────────────
-     BASE STYLES ARE THE LANDED, OPEN STATE. The animations only run from the
-     shelf to here. The global reduced-motion rule kills every animation, which
-     then leaves an open book resting on the desk — never a closed cover. */
-  .hero-book {
-    position: relative; width: min(520px, 100%); height: 220px;
-    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); perspective: 1400px;
-    filter: drop-shadow(0 16px 18px rgba(0,0,0,0.55));
-    animation: bookFly 1400ms var(--ease) 400ms both;
+  /* ── The laptop ────────────────────────────────────────────────────────────
+     The intake form IS the laptop screen (Dan, 2026-09-24): the visitor types straight
+     onto the computer on the desk. #caseDesc, #ncRunBtn and the hidden pickers are the
+     same elements as before, only dressed as a screen. .intake-sheet keeps a non-zero
+     padding-TOP on purpose: nocase-v2.3-patch.js inserts its confirm card after the
+     first ancestor of #ncRunBtn whose computed padding starts >= 8px, and that must be
+     the screen content, not the lid, or the confirm step lands under the keyboard. */
+  .laptop { position: relative; width: 100%; }
+  .laptop-lid {
+    position: relative; padding: 14px 14px 20px;
+    background: #0c0e11; border: 1px solid #2c323b; border-radius: 16px 16px 6px 6px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 80px -10px rgba(90,150,255,0.38), 0 30px 50px -20px rgba(0,0,0,0.9);
   }
-  .hero-book[hidden] { display: none; }
-  /* The boards: oxblood leather showing 7px around the pages, like a real open book. */
-  .hero-book::before {
-    content: ''; position: absolute; inset: -7px -9px -10px;
-    background: #5a1619 linear-gradient(90deg, rgba(0,0,0,0) 48%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0) 52%);
-    border: 1px solid #2e0a0c; border-radius: 4px; z-index: -1;
-    animation: leftShow 1ms linear 2050ms both;
+  .laptop-lid::before { content: ''; position: absolute; top: 5px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #1f262f; }
+  .laptop-screen {
+    border-radius: 4px; overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 0%, #17253d 0%, #0b111c 72%);
+    box-shadow: inset 0 0 0 1px rgba(140,190,255,0.16);
+    animation: screenOn 700ms var(--ease) 350ms both;
   }
-  /* The page block's edge along the bottom: a few paper lines under each page. */
-  .hero-book::after {
-    content: ''; position: absolute; left: 2px; right: 2px; bottom: -5px; height: 5px; z-index: -1;
-    background: repeating-linear-gradient(to bottom, #eceef1 0 1px, #d5d9df 1px 2px);
-    border-radius: 0 0 2px 2px;
-    animation: leftShow 1ms linear 2050ms both;
+  .laptop-base {
+    position: relative; height: 14px; margin: 0 -8%;
+    background: linear-gradient(#dde1e6, #a3aab3 55%, #5f656d); border-radius: 2px 2px 16px 16px;
+    box-shadow: 0 20px 26px -8px rgba(0,0,0,0.85);
   }
-  .hero-book-page {
-    background: var(--paper); border: 1px solid #d5d9df; padding: 18px 20px;
-    font-family: 'Hand', cursive; color: var(--gold); text-align: left;
-    min-height: 0;
+  .laptop-base::before { content: ''; position: absolute; top: 0; left: 41%; width: 18%; height: 5px; background: #858b94; border-radius: 0 0 7px 7px; }
+  @keyframes screenOn { from { filter: brightness(0.15); } to { filter: none; } }
+  .laptop .intake-sheet { background: transparent; border: 0; box-shadow: none; color: var(--on-dark); padding: 14px 22px 18px; }
+  .laptop .sheet-head { align-items: center; margin: -14px -22px 16px; padding: 9px 14px; border-bottom: 1px solid rgba(140,190,255,0.14); background: rgba(255,255,255,0.035); }
+  .screen-dots { display: inline-flex; gap: 6px; }
+  .screen-dots i { width: 10px; height: 10px; border-radius: 50%; background: #3a414c; }
+  .laptop .sheet-head-title { flex: 1; font-family: var(--sans); font-weight: 600; font-size: 13px; color: var(--on-dark); margin-left: 6px; }
+  .laptop .sheet-head-meta { color: var(--on-dark-soft); }
+  .laptop .field-label { font-family: var(--serif); font-size: 27px; font-weight: 700; line-height: 1.2; color: var(--buckram); margin-bottom: 12px; }
+  .laptop .intake-sheet textarea {
+    background: rgba(4,8,15,0.55); border: 1px solid rgba(140,190,255,0.24); color: #eef3fb; caret-color: var(--gilt-shine);
+    font-size: 17px; line-height: 28px; padding: 8px 12px; background-image: none;
   }
-  .hero-book-left { border-right: 0; border-radius: 3px 0 0 3px; box-shadow: inset -14px 0 18px -14px rgba(0,0,0,0.35); animation: leftShow 1ms linear 2050ms both; }
-  .hero-book-left p { font-size: 26px; line-height: 34px; }
-  .hero-book-right { border-left: 0; border-radius: 0 3px 3px 0; box-shadow: inset 14px 0 18px -14px rgba(0,0,0,0.35); }
-  .hero-book-ink {
-    height: 100%; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere;
-    font-size: 21px; line-height: 28px;
-  }
-  .hero-book-ink .wet {
-    background: linear-gradient(100deg, var(--gold) 35%, var(--gilt-shine) 50%, var(--gold) 65%) 100% 0 / 300% 100%;
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    animation: inkSoak 900ms var(--ease) both;
-  }
-  .hero-book-cover {
-    position: absolute; top: 0; bottom: 0; left: 50%; width: 50%;
-    background: linear-gradient(90deg, rgba(0,0,0,0.35), rgba(0,0,0,0) 12%), #6b1c1f;
-    /* gilt tooling: a double rule inset from the edge */
-    box-shadow: inset 0 0 0 10px #6b1c1f, inset 0 0 0 11px rgba(210,176,122,0.75), inset 0 0 0 15px #6b1c1f, inset 0 0 0 16px rgba(210,176,122,0.5);
-    border: 1px solid #3d0f11; border-radius: 0 3px 3px 0;
-    transform-origin: left center; backface-visibility: hidden;
-    transform: rotateY(-180deg);            /* landed state: open */
-    animation: coverOpen 500ms var(--ease) 1800ms both;
-  }
-  @keyframes bookFly {
-    0%   { opacity: 0; transform: translate(-420px, -380px) scale(0.3) rotate(-14deg); }
-    12%  { opacity: 1; }
-    72%  { transform: translate(0, -20px) scale(1.03) rotate(2deg); }
-    100% { opacity: 1; transform: none; }
-  }
-  @keyframes coverOpen { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
-  @keyframes leftShow  { from { visibility: hidden; } to { visibility: visible; } }
-  @keyframes inkSoak {
-    from { opacity: 0; filter: blur(1.5px); background-position: 100% 0; }
-    to   { opacity: 1; filter: none; background-position: 0 0; }
-  }
+  .laptop .intake-sheet textarea::placeholder { color: rgba(205,218,238,0.48); }
+  .laptop .intake-sheet textarea:focus-visible { outline: 2px solid rgba(140,190,255,0.65); }
+  .laptop .field-help, .laptop .sheet-foot { color: var(--on-dark-soft); }
+  .laptop .legacy-pickers .field-label { font-family: var(--sans); font-size: 13px; color: var(--on-dark); }
+  .laptop .legacy-pickers select { background: rgba(4,8,15,0.55); color: #eef3fb; border-color: rgba(140,190,255,0.24); }
+  .laptop #ncConfirmCard { margin: 0 22px 18px !important; }
 
-  /* ── Case cards ───────────────────────────────────────────────────────────
-     Six cards fly out of the book once it has landed and settle either side of the
-     intake sheet, tied to it by hairlines. Typing sends a spark down one line.
-     Base styles are the settled state (reduced motion leaves them there). Desktop
-     only: below 1200px there is no room beside the sheet. */
-  .case-cards { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  /* ── Hologram tiles ───────────────────────────────────────────────────────
+     What NoCase builds, as floating electronic panels (Dan's reference images):
+     six tiles fly out of the screen once it lights, hang either side of the laptop
+     tilted toward it, and are wired to it. Typing sends a spark to the next tile.
+     Base styles are the settled state (reduced motion leaves them there).
+     Desktop only: below 1200px there is no room beside the laptop. */
+  .case-cards { position: absolute; inset: 0; pointer-events: none; z-index: 0; perspective: 1100px; }
   .case-cards[hidden] { display: none; }
-  .lobby-desk, .hero-book { position: relative; z-index: 1; }
+  .lobby-desk { position: relative; z-index: 1; }
   .case-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .case-lines path { fill: none; stroke: rgba(210,176,122,0.6); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; animation: lineDraw 700ms var(--ease) var(--line-delay, 3s) both; }
-  .case-lines .spark { fill: var(--gilt-shine); filter: drop-shadow(0 0 6px var(--gilt-shine)); }
+  .case-lines path { fill: none; stroke: rgba(150,200,255,0.55); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; animation: lineDraw 700ms var(--ease) var(--line-delay, 3s) both; }
+  .case-lines .link { stroke: rgba(210,176,122,0.4); stroke-dasharray: 0.02 0.015; animation: linkFlow 4s linear infinite, lineFade 700ms var(--ease) var(--line-delay, 3s) both; }
+  .case-lines .spark { fill: #cfe4ff; filter: drop-shadow(0 0 6px #8fc3ff); }
   .case-card {
-    position: absolute; width: 262px; padding: 12px 14px 13px;
-    background: rgba(15,18,22,0.82); border: 1px solid rgba(210,176,122,0.55); border-radius: 3px;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 22px -4px rgba(210,176,122,0.30), 0 14px 26px -12px rgba(0,0,0,0.8);
-    text-align: left; transition: border-color 300ms, box-shadow 300ms;
-    animation: cardOut 900ms var(--ease) var(--card-delay, 2.4s) both, cardDrift 7s ease-in-out calc(var(--card-delay, 2.4s) + 900ms) infinite;
+    position: absolute; width: 176px; padding: 14px 12px 13px; overflow: hidden; text-align: center;
+    background: linear-gradient(160deg, rgba(130,180,255,0.14), rgba(130,180,255,0.03) 60%), rgba(8,12,20,0.55);
+    border: 1px solid rgba(160,205,255,0.5); border-radius: 8px;
+    box-shadow: 0 0 28px -4px rgba(110,170,255,0.45), inset 0 0 24px -6px rgba(110,170,255,0.35), 0 14px 26px -12px rgba(0,0,0,0.8);
+    transition: border-color 300ms, box-shadow 300ms;
+    animation: cardOut 900ms var(--ease) var(--card-delay, 1.2s) both, cardDrift 7s ease-in-out calc(var(--card-delay, 1.2s) + 900ms) infinite;
   }
-  /* Hologram treatment: a cool blue edge-light under the gold border, an icon, and a
-     slow sheen. Everything stays legible without the effects. */
-  .case-card { padding-left: 52px; overflow: hidden;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 26px -4px rgba(110,170,255,0.28), 0 0 18px -6px rgba(210,176,122,0.35), 0 14px 26px -12px rgba(0,0,0,0.8), inset 0 0 22px -8px rgba(110,170,255,0.25); }
+  .case-card[data-side="left"]  { rotate: y 14deg; }
+  .case-card[data-side="right"] { rotate: y -14deg; }
   .case-card::after { content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(105deg, transparent 40%, rgba(160,200,255,0.10) 50%, transparent 60%) -120% 0 / 250% 100% no-repeat;
-    animation: sheen 6s ease-in-out var(--card-delay, 2.4s) infinite; }
-  .cc-icon { position: absolute; left: 14px; top: 14px; width: 26px; height: 26px; fill: none; stroke: var(--gilt-shine); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(233,207,134,0.6)); }
-  .case-lines .link { stroke: rgba(130,180,255,0.35); stroke-dasharray: 0.02 0.015; stroke-dashoffset: 0; animation: linkFlow 4s linear infinite, lineFade 700ms var(--ease) var(--line-delay, 3s) both; }
-  @keyframes sheen { 0%, 70% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
-  @keyframes linkFlow { to { stroke-dashoffset: -0.35; } }
-  @keyframes lineFade { from { opacity: 0; } to { opacity: 1; } }
-  /* Motes: the floating points of light from the reference images, rising off the book. */
+    background: linear-gradient(105deg, transparent 40%, rgba(180,215,255,0.16) 50%, transparent 60%) -120% 0 / 250% 100% no-repeat;
+    animation: sheen 6s ease-in-out var(--card-delay, 1.2s) infinite; }
+  .cc-icon { display: block; width: 38px; height: 38px; margin: 0 auto 8px; fill: none; stroke: #e6f0ff; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px rgba(140,195,255,0.9)); }
+  .case-card .cc-kind { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gilt-shine); margin-bottom: 3px; }
+  .case-card b { display: block; font-family: var(--serif); font-size: 15px; line-height: 1.25; color: #f4f7fb; }
+  .case-card span:last-child { display: none; }   /* tiles show icon + title; the detail line is in "What NoCase prepares" */
+  .case-card.lit { border-color: #cfe4ff; box-shadow: 0 0 44px -2px rgba(140,195,255,0.8), inset 0 0 30px -4px rgba(140,195,255,0.5), 0 14px 26px -12px rgba(0,0,0,0.8); }
   .case-motes { position: absolute; inset: 0; }
   .case-motes i { position: absolute; width: var(--sz, 3px); height: var(--sz, 3px); border-radius: 50%;
     background: var(--c, #e9cf86); box-shadow: 0 0 8px 2px var(--c, #e9cf86); opacity: 0;
     animation: mote var(--dur, 7s) ease-in-out var(--dl, 0s) infinite; }
   @keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx, 0), -160px); } }
-  .case-card .cc-kind { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); margin-bottom: 4px; }
-  .case-card b { display: block; font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--buckram); }
-  .case-card span:last-child { display: block; font-size: 13px; line-height: 1.4; color: var(--on-dark); margin-top: 3px; }
-  .case-card.lit { border-color: var(--gilt-shine); box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 34px -2px rgba(233,207,134,0.55), 0 14px 26px -12px rgba(0,0,0,0.8); }
   @keyframes cardOut {
-    from { opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(0.35); }
+    from { opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(0.3); }
     to   { opacity: 1; transform: none; }
   }
-  @keyframes cardDrift { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+  @keyframes cardDrift { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+  @keyframes sheen { 0%, 70% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
   @keyframes lineDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes linkFlow { to { stroke-dashoffset: -0.35; } }
+  @keyframes lineFade { from { opacity: 0; } to { opacity: 1; } }
   @media (max-width: 1199px) { .case-cards { display: none; } }
-  @media (min-width: 921px) and (max-height: 860px) { .hero-book { height: 176px; } }
 
   /* ── ROOM 2: POSTED NOTICE ── */
   .notice { background: var(--panel); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 18px 24px; }
@@ -525,19 +502,16 @@
     .hero-headline { order: 1; margin-bottom: 0; }
     .hero-sub { order: 2; margin-bottom: 0; }
     .lobby-desk { order: 3; }
+    /* Phone laptop: thin bezel, no help line, so #ncRunBtn stays on the first screen. */
+    .laptop-lid { padding: 8px 8px 12px; border-radius: 12px 12px 5px 5px; }
+    .laptop-base { height: 10px; margin: 0 -3%; }
+    .laptop .intake-sheet { padding: 14px 14px 14px; }
+    .laptop .sheet-head { margin: -14px -14px 12px; }
+    .laptop .sheet-head-meta { display: none; }
+    .laptop .field-label { font-size: 21px; margin-bottom: 8px; }
+    .laptop .field-help { display: none; }
+    .laptop #ncRunBtn { margin-top: 12px; }
     .hero-desc { order: 4; font-size: 17px; }
-    /* The book sits in the photo band above the headline (56px nav → 164px
-       headline), so the Analyze button stays on the first screen at 375x667. */
-    .hero-book { position: absolute; top: -104px; left: 50%; width: 220px; height: 96px; margin-left: -110px; order: 0; }
-    .hero-book-page { padding: 8px 10px; }
-    .hero-book-left p { font-size: 14px; line-height: 18px; }
-    .hero-book-ink { font-size: 12.5px; line-height: 16px; }
-    @keyframes bookFly {
-      0%   { opacity: 0; transform: translate(-120px, -40px) scale(0.4) rotate(-14deg); }
-      12%  { opacity: 1; }
-      72%  { transform: translate(0, -6px) scale(1.03) rotate(2deg); }
-      100% { opacity: 1; transform: none; }
-    }
     .room { padding: 64px 16px; }
     .notice { padding: 16px; }
     .notice p { text-align: left; }
@@ -604,23 +578,14 @@
       <p class="hero-desc">Tell us what happened. We argue both sides, tell you where you stand, and build the packet you'd hand a lawyer &mdash; before you spend a dollar on one.</p>
     </div>
 
-    <!-- The flying book. Decorative mirror of #caseDesc in gold handwriting; the
-         textarea stays the real control. [hidden] until assets/hero-book.js runs,
-         so if that script fails the hero is exactly the old intake sheet. -->
-    <div class="hero-book" id="heroBook" aria-hidden="true" hidden>
-      <div class="hero-book-page hero-book-left"><p>Tell us what happened.</p></div>
-      <div class="hero-book-page hero-book-right"><div class="hero-book-ink" id="heroBookInk"></div></div>
-      <div class="hero-book-cover"></div>
-    </div>
-
-    <!-- Case cards: what NoCase builds from a description, flying out of the book.
+    <!-- Hologram tiles: what NoCase builds, flying out of the laptop screen.
          Decorative (the same list is in "What NoCase prepares" below), desktop only,
          [hidden] until assets/hero-cards.js positions them. -->
     <div class="case-cards" id="caseCards" aria-hidden="true" hidden>
       <svg class="case-lines" id="caseLines"></svg>
       <div class="case-motes" id="caseMotes"></div>
       <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c2.8-1 5.6-1 8.5.8v12.2c-2.9-1.8-5.7-1.8-8.5-.8zM21 5.5c-2.8-1-5.6-1-8.5.8v12.2c2.9-1.8 5.7-1.8 8.5-.8z"/></svg><span class="cc-kind">Statute &middot; verified</span><b>Tex. Prop. Code &sect;&nbsp;92.103</b><span>Full text, pulled from the code itself</span></div>
-      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg><span class="cc-kind">Case law &middot; read in full</span><b>Texas opinions</b><span>Favorable and adverse, both listed</span></div>
+      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg><span class="cc-kind">Case law</span><b>Texas opinions</b><span>Favorable and adverse, both listed</span></div>
       <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6M9 19h4"/></svg><span class="cc-kind">Evidence index</span><b>Notices, photos, texts</b><span>Every page read and dated</span></div>
       <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v17M7 20h10M5 6h14M5 6l-3 7h6zM19 6l-3 7h6z"/></svg><span class="cc-kind">Both sides argued</span><b>Your case, and theirs</b><span>The strongest argument against you, first</span></div>
       <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"/><path d="M3 11h18"/></svg><span class="cc-kind">Hearing kit</span><b>Seven sections</b><span>Ready to print and carry in</span></div>
@@ -628,10 +593,13 @@
     </div>
 
     <div class="lobby-desk">
+     <div class="laptop">
+      <div class="laptop-lid"><div class="laptop-screen" id="laptopScreen">
       <div id="liveInputSection">
         <div class="sheet intake-sheet">
           <div class="sheet-head">
-            <span class="sheet-head-title">Intake sheet</span>
+            <span class="screen-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="sheet-head-title">NoCase &middot; New case</span>
             <span class="sheet-head-meta">Texas matters only. Free during beta.</span>
           </div>
           <label class="field-label" for="caseDesc">Tell us what happened</label>
@@ -672,6 +640,9 @@
           <p class="sheet-foot">Legal information, not legal advice.</p>
         </div>
       </div>
+      </div></div>
+      <div class="laptop-base" aria-hidden="true"></div>
+     </div>
     </div>
   </div>
 
@@ -1177,8 +1148,7 @@ async function ncRunAnalysis() {
   }
 </script>
 
-<script src="/assets/hero-book.js?v=1" defer></script>
-<script src="/assets/hero-cards.js?v=1" defer></script>
+<script src="/assets/hero-cards.js?v=2" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
 </html>
