@@ -91,6 +91,7 @@
         svg.appendChild(l);
       });
     });
+    paths.sort((a, b) => (a.card.dataset.step || 0) - (b.card.dataset.step || 0));   // sparks walk the steps in order
     motes(s);
   }
 

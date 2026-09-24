@@ -115,6 +115,9 @@
   }
   .btn:hover { filter: brightness(0.92); }
   .btn-lamp { background: var(--lamp); color: #fff; }
+  /* The Analyze button is gold (Dan, 2026-09-24). Dark ink on gold: ~8:1 contrast. */
+  #ncRunBtn.btn-lamp { background: linear-gradient(#e6c887, #c9a24f); color: #16120c; border: 1px solid #a8823a; box-shadow: 0 0 18px -4px rgba(233,207,134,0.55); }
+  #ncRunBtn.btn-lamp:hover { background: linear-gradient(#dcbb74, #b99140); }
   .btn-paper { background: var(--paper); color: var(--ink); }
 
   /* ── ROOM 1: THE LOBBY ─────────────────────────────────────────────────────
@@ -364,7 +367,7 @@
   .case-lines .link { stroke: rgba(210,176,122,0.4); stroke-dasharray: 0.02 0.015; animation: linkFlow 4s linear infinite, lineFade 700ms var(--ease) var(--line-delay, 3s) both; }
   .case-lines .spark { fill: #cfe4ff; filter: drop-shadow(0 0 6px #8fc3ff); }
   .case-card {
-    position: absolute; width: 150px; padding: 12px 10px 11px; overflow: hidden; text-align: center;
+    position: absolute; width: 164px; padding: 12px 10px 11px; overflow: hidden; text-align: center;
     background: linear-gradient(160deg, rgba(130,180,255,0.14), rgba(130,180,255,0.03) 60%), rgba(8,12,20,0.55);
     border: 1px solid rgba(160,205,255,0.5); border-radius: 16px;
     box-shadow: 0 0 28px -4px rgba(110,170,255,0.45), inset 0 0 24px -6px rgba(110,170,255,0.35), 0 14px 26px -12px rgba(0,0,0,0.8);
@@ -635,18 +638,19 @@
       <p class="hero-sub">Prove us wrong.</p>
     </div>
 
-    <!-- Hologram tiles: what NoCase builds, flying out of the laptop screen.
-         Decorative (the same list is in "What NoCase prepares" below), desktop only,
+    <!-- Hologram tiles: the six steps, flying out of the laptop screen. DOM order is
+         left outer→inner then right outer→inner, so steps read 1→6 across the fan.
+         Decorative (the same steps are in "How your case gets prepared"), desktop only,
          [hidden] until assets/hero-cards.js positions them. -->
     <div class="case-cards" id="caseCards" aria-hidden="true" hidden>
       <svg class="case-lines" id="caseLines"></svg>
       <div class="case-motes" id="caseMotes"></div>
-      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c2.8-1 5.6-1 8.5.8v12.2c-2.9-1.8-5.7-1.8-8.5-.8zM21 5.5c-2.8-1-5.6-1-8.5.8v12.2c2.9-1.8 5.7-1.8 8.5-.8z"/></svg><span class="cc-kind">Statute &middot; verified</span><b>Tex. Prop. Code &sect;&nbsp;92.103</b><span>Full text, pulled from the code itself</span></div>
-      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg><span class="cc-kind">Case law</span><b>Texas opinions</b><span>Favorable and adverse, both listed</span></div>
-      <div class="case-card" data-side="left"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6M9 19h4"/></svg><span class="cc-kind">Evidence index</span><b>Notices, photos, texts</b><span>Every page read and dated</span></div>
-      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v17M7 20h10M5 6h14M5 6l-3 7h6zM19 6l-3 7h6z"/></svg><span class="cc-kind">Both sides argued</span><b>Your case, and theirs</b><span>The strongest argument against you, first</span></div>
-      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"/><path d="M3 11h18"/></svg><span class="cc-kind">Hearing kit</span><b>Seven sections</b><span>Ready to print and carry in</span></div>
-      <div class="case-card" data-side="right"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 4.5l6 6M11 7l6 6M12.2 5.8l-4.5 4.5 6 6 4.5-4.5M9.5 12.5L3 19"/></svg><span class="cc-kind">Practice hearing</span><b>A judge&rsquo;s questions</b><span>Rehearsed before the real one</span></div>
+      <div class="case-card" data-side="left" data-step="1"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1L19 8.5 15.5 5 5 15.5z"/><path d="M13.5 7l3.5 3.5"/></svg><span class="cc-kind">Step 1</span><b>Tell us what happened</b><span>A few sentences on the intake sheet. NoCase works out what kind of case it is and which side you're on, then asks you to confirm before it goes further.</span></div>
+      <div class="case-card" data-side="left" data-step="2"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6M9 19h4"/></svg><span class="cc-kind">Step 2</span><b>Bring your evidence</b><span>Contracts, texts, emails, bank statements, photos from your phone. Each file gets a fingerprint and a timestamp the moment it goes in.</span></div>
+      <div class="case-card" data-side="left" data-step="3"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v17M7 20h10M5 6h14M5 6l-3 7h6zM19 6l-3 7h6z"/></svg><span class="cc-kind">Step 3</span><b>Both sides get argued</b><span>One side builds the strongest case against you. The other builds the strongest case for you.</span></div>
+      <div class="case-card" data-side="right" data-step="6"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12.5h18"/></svg><span class="cc-kind">Step 6</span><b>Walk out with your packet</b><span>Your brief, your objections and answers, and your evidence index in one download.</span></div>
+      <div class="case-card" data-side="right" data-step="5"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="cc-kind">Step 5</span><b>Answer every objection</b><span>NoCase raises the objections the other side would. You answer each one with evidence, or you concede it.</span></div>
+      <div class="case-card" data-side="right" data-step="4"><svg class="cc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 4.5l6 6M11 7l6 6M12.2 5.8l-4.5 4.5 6 6 4.5-4.5M9.5 12.5L3 19"/></svg><span class="cc-kind">Step 4</span><b>The judge weighs it</b><span>A third pass acts as the judge: who prevails, how confident, and what evidence would change the answer.</span></div>
     </div>
 
     <div class="lobby-desk">
@@ -1218,7 +1222,7 @@ async function ncRunAnalysis() {
   }
 </script>
 
-<script src="/assets/hero-cards.js?v=5" defer></script>
+<script src="/assets/hero-cards.js?v=6" defer></script>
 <script src="/assets/hero-book.js?v=7" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
