@@ -755,7 +755,8 @@
       if (!d || d.v !== 1 || !d.judge || Date.now() - d.at > 30 * 864e5) return;
       state.facts = d.facts || ''; state.caseTypeId = d.caseTypeId; state.userRole = d.userRole;
       const setHtml = (id, val) => { const n = $(id); if (n) n.innerHTML = val || ''; };   // runAnalysis has its own; out of scope here
-      const ta = $('caseDesc'); if (ta && !ta.value) ta.value = state.facts;
+      // The saved facts are NOT put back into #caseDesc (Dan, 2026-09-24): the box starts
+      // empty so the visitor can type straight away. state.facts still feeds the /app/ handoff.
       setHtml('ncProsBody', d.pros); setHtml('ncJudgeBody', d.judge); setHtml('ncDefBody', d.def);
       setHtml('ncProsLabel', d.prosLabel); setHtml('ncDefLabel', d.defLabel);
       setHtml('ncProsBadge', d.prosBadge); setHtml('ncDefBadge', d.defBadge);

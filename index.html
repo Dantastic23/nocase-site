@@ -808,17 +808,10 @@
   const KEY = 'ncCaseDraft';
   const el = document.getElementById('caseDesc');
   if (!el) return;
-  try {
-    const saved = localStorage.getItem(KEY);
-    if (saved && !el.value) el.value = saved;
-  } catch (e) { /* storage unavailable (private mode) — typing still works */ }
-  let t;
-  el.addEventListener('input', () => {
-    clearTimeout(t);
-    t = setTimeout(() => {
-      try { localStorage.setItem(KEY, el.value); } catch (e) {}
-    }, 400);
-  });
+  // Draft restore is OFF (Dan, 2026-09-24): a restored draft is real text the visitor
+  // has to delete before typing. The box always starts empty and shows the self-typing
+  // sample (a placeholder, gone on the first keystroke). Clear drafts saved before this.
+  try { localStorage.removeItem(KEY); } catch (e) { /* storage unavailable */ }
 })();
 
 function ncShowSkeleton(id) {
@@ -1259,6 +1252,6 @@ async function ncRunAnalysis() {
 
 <script src="/assets/hero-cards.js?v=8" defer></script>
 <script src="/assets/hero-book.js?v=7" defer></script>
-<script src="/nocase-v2.3-patch.js?v=7" defer></script>
+<script src="/nocase-v2.3-patch.js?v=8" defer></script>
 </body>
 </html>
