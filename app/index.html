@@ -152,6 +152,13 @@
   .msg-bubble { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; }
   .msg.user .msg-bubble { background: var(--ink); color: var(--paper); border-bottom-right-radius: 2px; }
   .msg.ai .msg-bubble { background: white; color: var(--ink); border: 1px solid var(--rule); border-bottom-left-radius: 2px; }
+  @media (hover: none), (pointer: coarse) { .kbd-hint { display: none; } }   /* no keyboard shortcut on phones */
+  .msg-bubble.md { white-space: normal; }
+  .msg-bubble.md p { margin: 0 0 0.55rem; } .msg-bubble.md p:last-child { margin-bottom: 0; }
+  .msg-bubble.md .md-h { font-weight: 700; margin-top: 0.7rem; }
+  .msg-bubble.md ul, .msg-bubble.md ol { margin: 0 0 0.55rem; padding-left: 1.25rem; } .msg-bubble.md li { margin-bottom: 0.25rem; }
+  .msg-bubble.md code { font-size: 0.85em; background: #f3f1ec; padding: 0 0.25em; border-radius: 3px; }
+  .msg-bubble.md hr { border: 0; border-top: 1px solid var(--rule); margin: 0.6rem 0; }
   .msg.system .msg-bubble { background: var(--gold-light); border: 1px solid #e9d8a2; color: #5a4a1e; border-radius: 5px; font-size: 0.85rem; }
   .msg-meta { font-size: 0.7rem; color: var(--ink-muted); margin-top: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
   .msg.user .msg-meta { justify-content: flex-end; }
@@ -510,12 +517,12 @@
       <div class="composer-wrap">
       <div class="attachments" id="attachments"></div>
       <div class="composer">
-        <textarea id="composerInput" placeholder="Ask Claude about your case…  (Cmd+click documents on the left to attach)" rows="1"></textarea>
+        <textarea id="composerInput" placeholder="Ask about your case…" rows="1"></textarea>
         <button class="send" id="sendBtn">Send</button>
       </div>
       <div class="composer-foot">
-        <span><strong>Snippets only</strong> are sent to Claude. Full files stay on your computer.</span>
-        <span>Cmd+Enter to send</span>
+        <span><strong>Snippets only</strong> are sent to Claude. Full files stay on your device. Tap or click a document in your evidence to attach it.</span>
+        <span class="kbd-hint">Cmd+Enter to send</span>
       </div>
     </div>
     </div>
@@ -1088,12 +1095,31 @@ function renderAttachments() {
   }));
 }
 
+// Claude's chat replies are markdown. Escape first, then render only headings, lists,
+// bold, italic and code, so model text can never inject HTML. Same subset as the Brief tab.
+function chatMarkdown(md) {
+  const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inl = t => t.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+  const out = []; let list = null;
+  const close = () => { if (list) { out.push('</' + list + '>'); list = null; } };
+  for (const ln of String(md || '').split(/\r?\n/)) {
+    let m;
+    if (/^\s*$/.test(ln)) { close(); continue; }
+    if (/^---+\s*$/.test(ln)) { close(); out.push('<hr>'); continue; }
+    if ((m = ln.match(/^(#{1,4})\s+(.+)$/))) { close(); out.push('<p class="md-h">' + inl(esc(m[2])) + '</p>'); continue; }
+    if ((m = ln.match(/^\s*[-*+•]\s+(.+)$/))) { if (list !== 'ul') { close(); out.push('<ul>'); list = 'ul'; } out.push('<li>' + inl(esc(m[1])) + '</li>'); continue; }
+    if ((m = ln.match(/^\s*\d+[.)]\s+(.+)$/))) { if (list !== 'ol') { close(); out.push('<ol>'); list = 'ol'; } out.push('<li>' + inl(esc(m[1])) + '</li>'); continue; }
+    close(); out.push('<p>' + inl(esc(ln)) + '</p>');
+  }
+  close();
+  return out.join('');
+}
 function renderChat() {
   const wrap = document.getElementById('msgs');
   if (!chatLog.messages.length) {
     wrap.innerHTML = `
       <div class="msg ai">
-        <div class="msg-bubble">I'm Claude. Tell me about the case — what happened, who's involved, what outcome you're working toward. As you add documents to your case folder I'll factor them in. Click any document on the left to attach it directly to a question. Your full files stay on your computer; I only see snippets you choose to share.</div>
+        <div class="msg-bubble">I'm Claude. Tell me about the case — what happened, who's involved, what outcome you're working toward. As you add documents to your case folder I'll factor them in. Tap or click any document in your evidence to attach it to a question. Your full files stay on your device; I only see snippets you choose to share.</div>
         <div class="msg-meta">✦ Claude · just now</div>
       </div>`;
     return;
@@ -1103,7 +1129,8 @@ function renderChat() {
     const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const who = role === 'ai' ? '✦ Claude · ' : '';
     const att = m.attachments && m.attachments.length ? `<div style="font-size:0.7rem; opacity:0.7; margin-top:0.25rem;">📎 ${m.attachments.join(', ')}</div>` : '';
-    return `<div class="msg ${role}"><div class="msg-bubble">${escapeHtml(m.content)}</div>${att}<div class="msg-meta">${who}${time}</div></div>`;
+    const body = role === 'ai' ? `<div class="msg-bubble md">${chatMarkdown(m.content)}</div>` : `<div class="msg-bubble">${escapeHtml(m.content)}</div>`;
+    return `<div class="msg ${role}">${body}${att}<div class="msg-meta">${who}${time}</div></div>`;
   }).join('');
   wrap.scrollTop = wrap.scrollHeight;
 }
