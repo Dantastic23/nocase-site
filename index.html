@@ -328,12 +328,12 @@
   }
   .desk-prop { position: absolute; bottom: 40px; pointer-events: none; filter: drop-shadow(0 14px 10px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
   .prop-justice { left: calc(100% + 56px); height: 320px; }
-  .desk-book { position: absolute; z-index: 2; bottom: 4px; right: calc(100% - 30px); width: min(430px, calc(50vw - 50% + 6px)); filter: drop-shadow(0 14px 12px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
+  .desk-book { position: absolute; z-index: 2; bottom: 4px; right: calc(100% + 14px); width: min(400px, calc(50vw - 50% - 22px)); filter: drop-shadow(0 14px 12px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
   .desk-book[hidden] { display: none; }
   .desk-book img { display: block; width: 100%; height: auto; }
   /* The script sizes each page box to its on-screen size so text is drawn at the size it
      is seen (a scaled-down box blurs it), and sets --fs from the page width. */
-  .book-page { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 6% 5% 4%; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; text-align: center; font-size: var(--fs, 10px); -webkit-font-smoothing: antialiased; }
+  .book-page { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 2% 5% 3%; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; text-align: center; font-size: var(--fs, 10px); -webkit-font-smoothing: antialiased; }
   .book-page h4 { font-family: var(--serif); font-size: 1.12em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b1c1f; margin: 0 0 0.45em; }
   .book-page p { font-family: var(--serif); font-size: 1em; line-height: 1.3; color: #1d1814; margin: 0; }
   @media (max-width: 1099px) { .desk-prop, .desk-book { display: none; } }
@@ -707,8 +707,8 @@
            Verbatim excerpts, omissions marked with an ellipsis — the full text is not
            legible at this page size (Dan asked for legible, 2026-09-24). Page corners are measured from assets/book.webp (inset from the
            paper edge); assets/hero-book.js warps the pages onto them. -->
-      <div class="desk-book" id="deskBook" aria-hidden="true" hidden data-left='[[0.1263, 0.1438], [0.4599, 0.0873], [0.4757, 0.8028], [0.0822, 0.8198000000000001]]' data-right='[[0.5371, 0.0923], [0.8734, 0.1436], [0.9121, 0.8341000000000001], [0.5213, 0.8245]]'>
-        <img src="assets/book.webp?v=3" alt="" width="900" height="523" decoding="async">
+      <div class="desk-book" id="deskBook" aria-hidden="true" hidden data-left='[[0.1263, 0.11380000000000001], [0.4599, 0.057300000000000004], [0.4757, 0.8028], [0.0822, 0.8198]]' data-right='[[0.5371, 0.062299999999999994], [0.8734, 0.1136], [0.9121, 0.8341], [0.5213, 0.8245]]'>
+        <img src="assets/book.webp?v=4" alt="" width="900" height="523" decoding="async">
         <div class="book-page book-left"><section><h4>First Amendment</h4><p>Congress shall make no law &hellip; abridging the freedom of speech, or of the press; or the right of the people peaceably to assemble &hellip;</p></section></div>
         <div class="book-page book-right"><section><h4>Fourth Amendment</h4><p>The right of the people to be secure in their persons, houses, papers, and effects, against unreasonable searches and seizures, shall not be violated &hellip;</p></section></div>
       </div>
@@ -1219,7 +1219,7 @@ async function ncRunAnalysis() {
 </script>
 
 <script src="/assets/hero-cards.js?v=5" defer></script>
-<script src="/assets/hero-book.js?v=6" defer></script>
+<script src="/assets/hero-book.js?v=7" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
 </html>
