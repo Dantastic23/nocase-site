@@ -24,6 +24,7 @@
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
   @font-face { font-family: 'Franklin'; src: url('assets/fonts/lf-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+  @font-face { font-family: 'Hand'; src: url('assets/fonts/hand.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
   /* ── The rule of this page: ROOMS ARE DARK, DOCUMENTS ARE PAPER. ─────────────
      Every section is a room (walnut, lamp light). --paper appears only where there
@@ -327,9 +328,23 @@
     .desk-top { top: calc(100% - 200px); height: 250px; }
   }
   .desk-prop { position: absolute; bottom: 40px; pointer-events: none; filter: drop-shadow(0 14px 10px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
-  .prop-justice { right: calc(100% + 64px); height: 320px; }
-  .prop-scales  { left: calc(100% + 52px); height: 210px; }
-  @media (max-width: 1099px) { .desk-prop { display: none; } }
+  .prop-liberty { left: calc(100% + 56px); height: 330px; }
+  .desk-book { position: absolute; z-index: 1; bottom: 10px; right: calc(100% + 10px); width: min(380px, calc(50vw - 50% - 24px)); filter: drop-shadow(0 14px 12px rgba(0,0,0,0.75)); animation: riseIn 600ms var(--ease) 500ms both; }
+  .desk-book[hidden] { display: none; }
+  .desk-book img { display: block; width: 100%; height: auto; }
+  .book-page { position: absolute; left: 0; top: 0; width: 300px; height: 380px; transform-origin: 0 0; padding: 40px 34px 30px; overflow: hidden; }
+  .book-rights h4 { font-family: var(--serif); font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b1c1f; text-align: center; margin: 0 0 12px; }
+  .book-rights p { font-family: var(--serif); font-size: 16px; line-height: 1.5; color: #2a2320; text-align: justify; hyphens: auto; margin: 0; }
+  .book-rights section { animation: fadeIn 900ms var(--ease) both; }
+  .book-prompt { font-family: 'Hand', cursive; font-size: 34px; line-height: 40px; color: var(--gold); margin: 0 0 6px; }
+  .book-ink { font-family: 'Hand', cursive; font-size: 30px; line-height: 38px; color: var(--gold); height: 262px; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .book-ink .wet {
+    background: linear-gradient(100deg, var(--gold) 35%, var(--gilt-shine) 50%, var(--gold) 65%) 100% 0 / 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: inkSoak 900ms var(--ease) both;
+  }
+  @keyframes inkSoak { from { opacity: 0; filter: blur(1.5px); background-position: 100% 0; } to { opacity: 1; filter: none; background-position: 0 0; } }
+  @media (max-width: 1099px) { .desk-prop, .desk-book { display: none; } }
   /* Room above the laptop for the tiles to rise into. */
   @media (min-width: 1200px) { .lobby-desk { margin-top: 150px; } }
   /* Short laptop screens (1280x800): tighten so the keyboard shows above the fold. */
@@ -695,8 +710,15 @@
       </div></div>
       <div class="laptop-deck" aria-hidden="true"><div class="deck-top"><div class="keys" id="deckKeys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="space"></i><i></i><i></i><i></i></div><div class="trackpad"></div></div></div>
       <div class="desk-top" aria-hidden="true"></div>
-      <img class="desk-prop prop-justice" src="assets/lady-justice.png" alt="" aria-hidden="true" decoding="async">
-      <img class="desk-prop prop-scales" src="assets/scales.png" alt="" aria-hidden="true" decoding="async">
+      <img class="desk-prop prop-liberty" src="assets/lady-liberty.webp" alt="" aria-hidden="true" decoding="async">
+      <!-- The open book: left page cycles the rights amendments (verbatim, with
+           marked omissions); right page writes #caseDesc in gold. Page corners are
+           measured from assets/book.webp; assets/hero-book.js warps the pages onto them. -->
+      <div class="desk-book" id="deskBook" aria-hidden="true" hidden data-left='[[0.0735, 0.105], [0.4792, 0.0422], [0.4968, 0.9038], [0.0095, 0.9527]]' data-right='[[0.5178, 0.0466], [0.9265, 0.1036], [0.9944, 0.9675], [0.5002, 0.9268]]'>
+        <img src="assets/book.webp" alt="" width="900" height="523" decoding="async">
+        <div class="book-page book-left"><div class="book-rights" id="bookRights"><section><h4>Amendment I</h4><p>Congress shall make no law respecting an establishment of religion, or prohibiting the free exercise thereof; or abridging the freedom of speech, or of the press; or the right of the people peaceably to assemble, and to petition the Government for a redress of grievances.</p></section><section><h4>Amendment IV</h4><p>The right of the people to be secure in their persons, houses, papers, and effects, against unreasonable searches and seizures, shall not be violated, and no Warrants shall issue, but upon probable cause, supported by Oath or affirmation, and particularly describing the place to be searched, and the persons or things to be seized.</p></section><section><h4>Amendment V</h4><p>No person shall &hellip; be compelled in any criminal case to be a witness against himself, nor be deprived of life, liberty, or property, without due process of law; nor shall private property be taken for public use, without just compensation.</p></section><section><h4>Amendment VI</h4><p>In all criminal prosecutions, the accused shall enjoy the right to a speedy and public trial, by an impartial jury &hellip; to be confronted with the witnesses against him; to have compulsory process for obtaining witnesses in his favor, and to have the Assistance of Counsel for his defence.</p></section><section><h4>Amendment XIV, &sect;&nbsp;1</h4><p>&hellip; nor shall any State deprive any person of life, liberty, or property, without due process of law; nor deny to any person within its jurisdiction the equal protection of the laws.</p></section></div></div>
+        <div class="book-page book-right"><p class="book-prompt">Tell us what happened.</p><div class="book-ink" id="bookInk"></div></div>
+      </div>
      </div>
     </div>
   </div>
@@ -1204,6 +1226,7 @@ async function ncRunAnalysis() {
 </script>
 
 <script src="/assets/hero-cards.js?v=5" defer></script>
+<script src="/assets/hero-book.js?v=1" defer></script>
 <script src="/nocase-v2.3-patch.js?v=7" defer></script>
 </body>
 </html>
