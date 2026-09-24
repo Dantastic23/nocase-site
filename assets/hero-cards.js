@@ -171,6 +171,34 @@
   else window.addEventListener('resize', layout);
   box.addEventListener('input', spark);
 
+  // The laptop photo's keyboard: the key you press goes down. Key rectangles are
+  // measured from assets/laptop.webp as % of the image (left, top, width, height);
+  // re-measure if that image is replaced. Desktop only (the photo is hidden on phones).
+  const KEYMAP = {"Digit1":[15.68,78.43,5.57,1.64],"Digit2":[21.25,78.43,5.43,1.64],"Digit3":[26.68,78.43,5.5,1.64],"Digit4":[32.18,78.43,5.5,1.64],"Digit5":[38.36,78.43,4.79,1.64],"Digit6":[43.79,78.43,4.86,1.64],"Digit7":[49.29,78.43,4.82,1.64],"Digit8":[54.79,78.43,5.46,1.64],"Digit9":[60.25,78.43,5.46,1.64],"Digit0":[65.71,78.43,5.5,1.64],"Minus":[71.21,78.43,5.46,1.64],"Equal":[76.68,78.43,5.43,1.64],"Backquote":[10.36,78.43,5.32,1.64],"Backspace":[82.11,78.43,8.96,1.64],"KeyQ":[18.07,80.25,5.5,1.73],"KeyW":[23.57,80.25,5.54,1.73],"KeyE":[29.11,80.25,5.54,1.73],"KeyR":[34.64,80.25,5.57,1.73],"KeyT":[40.86,80.25,4.89,1.73],"KeyY":[46.43,80.25,4.89,1.73],"KeyU":[52.0,80.25,5.57,1.73],"KeyI":[57.57,80.25,4.86,1.73],"KeyO":[63.11,80.25,5.54,1.73],"KeyP":[68.64,80.25,5.61,1.73],"BracketLeft":[74.25,80.25,5.5,1.73],"BracketRight":[79.75,80.25,5.54,1.73],"Tab":[9.64,80.25,8.43,1.73],"Backslash":[85.29,80.25,6.29,1.73],"KeyA":[18.89,82.07,5.61,1.73],"KeyS":[24.5,82.07,5.61,1.73],"KeyD":[30.11,82.07,5.68,1.73],"KeyF":[35.79,82.07,5.61,1.73],"KeyG":[42.07,82.07,4.93,1.73],"KeyH":[47.0,82.07,5.68,1.73],"KeyJ":[53.39,82.07,5.61,1.73],"KeyK":[59.0,82.07,5.0,1.73],"KeyL":[64.68,82.07,5.64,1.73],"Semicolon":[70.32,82.07,5.57,1.73],"Quote":[75.89,82.07,5.68,1.73],"CapsLock":[9.14,82.07,9.75,1.73],"Enter":[81.57,82.07,10.43,1.73],"KeyZ":[21.25,83.89,5.64,1.73],"KeyX":[26.89,83.89,5.75,1.73],"KeyC":[33.29,83.89,5.07,1.73],"KeyV":[39.0,83.89,5.07,1.73],"KeyB":[44.07,83.89,5.71,1.73],"KeyN":[50.46,83.89,5.04,1.73],"KeyM":[56.21,83.89,5.07,1.73],"Comma":[62.0,83.89,5.0,1.73],"Period":[67.68,83.89,5.71,1.73],"Slash":[73.39,83.89,5.71,1.73],"ShiftLeft":[8.57,83.89,12.68,1.73],"ShiftRight":[79.11,83.89,13.25,1.73],"Space":[32.36,85.8,29.79,1.82]};
+  const photo = document.querySelector('.laptop-photo');
+  if (photo && !still) {
+    const layer = document.createElement('div');
+    layer.className = 'laptop-keys';
+    layer.setAttribute('aria-hidden', 'true');
+    const el = {};
+    for (const [code, [l, t, w, h]] of Object.entries(KEYMAP)) {
+      const k = document.createElement('i');
+      k.style.cssText = `left:${l}%;top:${t}%;width:${w}%;height:${h}%`;
+      layer.appendChild(k);
+      el[code] = k;
+    }
+    photo.after(layer);
+    const up = code => el[code] && el[code].classList.remove('down');
+    box.addEventListener('keydown', e => {
+      const k = el[e.code];
+      if (!k) return;
+      k.classList.add('down');
+      clearTimeout(k._t);
+      k._t = setTimeout(() => up(e.code), 400);   // in case keyup never arrives
+    });
+    box.addEventListener('keyup', e => up(e.code));
+  }
+
   // A key on the laptop's keyboard lights up for every keystroke.
   const keys = document.querySelectorAll('#deckKeys i:not(.space)');
   const space = document.querySelector('#deckKeys .space');
