@@ -336,7 +336,9 @@
   .exp-guide details { margin-top: 0.4rem; font-size: 0.78rem; color: var(--ink-soft); }
   .exp-crim { margin-top: 0.4rem; background: #fdf3f2; border: 1px solid #e3b4b0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.78rem; color: #7a1f1f; }
   /* Ask NoCase (flow-spec Phase 3) */
-  .ask-fab { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 800; background: var(--ink); color: var(--paper); border: none; border-radius: 99px; padding: 0.7rem 1.1rem; font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+  /* bottom clears the chat composer (input + Send + hint, ~85px) when scrolled to the end;
+     at 1.1rem it sat on top of the Send button (Dan, 2026-09-24). */
+  .ask-fab { position: fixed; right: 1.1rem; bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px)); z-index: 800; background: var(--ink); color: var(--paper); border: none; border-radius: 99px; padding: 0.7rem 1.1rem; font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
   .ask-fab[hidden] { display: none; }
   .ask-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100%); z-index: 850; background: #fff; box-shadow: -10px 0 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
   .ask-panel[hidden] { display: none; }
