@@ -11,7 +11,7 @@
 <meta property="og:title" content="NoCase &mdash; You don't have a case. Prove us wrong.">
 <meta property="og:description" content="Tell us what happened. We argue both sides, tell you where you stand, and build the packet you'd hand a lawyer.">
 <meta property="og:image" content="https://nocase.org/assets/hero-library.jpg">
-<meta name="theme-color" content="#1d130d">
+<meta name="theme-color" content="#0f1216">
 <!-- Fonts are served from assets/fonts/ — same no-external-requests posture as the
      plates. TeX Gyre Schola (GUST Font License) is a cut of Century Schoolbook, the face
      court briefs are filed in; Libre Franklin (OFL) is the face of forms and labels. -->
@@ -30,28 +30,29 @@
      Every section is a room (walnut, lamp light). --paper appears only where there
      is an actual document: the intake sheet, the example case file, the fee
      schedule, the terms. If a paralegal couldn't hand it to you, it isn't white.
-     Palette is lifted from a Texas law library: South Western Reporter buckram,
-     its red spine labels, walnut, brass, banker's-lamp green. */
+     Palette: charcoal-ink rooms and white paper (no brown, Dan 2026-09-24), with
+     the gold accents kept — buckram headline, brass rules, gilt handwriting —
+     plus spine red and banker's-lamp green. */
   :root {
-    --walnut: #1d130d;
-    --panel: #2b1c13;
+    --walnut: #0f1216;   /* name kept; value is charcoal ink since 2026-09-24 (Dan: no brown) */
+    --panel: #1a1f26;
     --buckram: #d2b07a;
     --brass: #b8954a;
     --lamp: #1e5c45;
     --spine: #9b2226;
-    --on-dark: rgba(242,240,233,0.80);
-    --on-dark-soft: rgba(242,240,233,0.62);
+    --on-dark: rgba(244,245,247,0.82);
+    --on-dark-soft: rgba(244,245,247,0.62);
     --hairline: rgba(184,149,74,0.32);
 
     /* Legacy token NAMES are kept on purpose: nocase-v2.3-patch.js and the inline
        fallback write these into result markup. Retune values; never rename. They
        all describe ink-on-paper, because results render on paper. */
-    --ink: #16120f;
-    --ink-soft: #3d352e;
-    --ink-muted: #6f665c;
-    --paper: #f2f0e9;
-    --paper-dark: #e6e2d6;
-    --rule: #cfc8b8;
+    --ink: #121417;
+    --ink-soft: #3a4048;
+    --ink-muted: #656c76;
+    --paper: #ffffff;
+    --paper-dark: #eceef1;
+    --rule: #d5d9df;
     --blue: #2f4a7a;
     --blue-light: #e7ecf4;
     --red: #9b2226;
@@ -132,9 +133,9 @@
   .lobby-plate::after {
     content: ''; position: absolute; inset: 0;
     background:
-      radial-gradient(ellipse 46% 22% at 50% 17%, rgba(29,19,13,0.72), rgba(29,19,13,0) 100%),
-      linear-gradient(to bottom, rgba(29,19,13,0.45) 0%, rgba(29,19,13,0) 18%, rgba(29,19,13,0) 66%, var(--walnut) 100%),
-      linear-gradient(to right, rgba(29,19,13,0.62) 0%, rgba(29,19,13,0.30) 46%, rgba(29,19,13,0.58) 100%);
+      radial-gradient(ellipse 46% 22% at 50% 17%, rgba(15,18,22,0.72), rgba(15,18,22,0) 100%),
+      linear-gradient(to bottom, rgba(15,18,22,0.45) 0%, rgba(15,18,22,0) 18%, rgba(15,18,22,0) 66%, var(--walnut) 100%),
+      linear-gradient(to right, rgba(15,18,22,0.62) 0%, rgba(15,18,22,0.30) 46%, rgba(15,18,22,0.58) 100%);
   }
   /* Headline on top, the book on the desk in the middle, the intake sheet under it
      (flying-book hero, 2026-09-21). Sized so #ncRunBtn clears the fold at 1440x900. */
@@ -160,13 +161,13 @@
   .hero-headline.verdict-good  { color: var(--green-bright); }
   .hero-headline.verdict-mixed { color: var(--gold-bright); }
   .hero-headline.verdict-bad   { color: var(--red-bright); }
-  .hero-sub { font-family: var(--serif); font-style: italic; font-size: clamp(22px, 2.6vw, 32px); line-height: 1.25; color: rgba(242,240,233,0.92); margin-bottom: 0; }
+  .hero-sub { font-family: var(--serif); font-style: italic; font-size: clamp(22px, 2.6vw, 32px); line-height: 1.25; color: rgba(244,245,247,0.92); margin-bottom: 0; }
   .hero-desc { max-width: 30em; font-size: 18px; line-height: 1.6; color: var(--on-dark); }
 
   /* The intake sheet — the one loud element on the page. */
   .sheet {
     background: var(--paper); color: var(--ink);
-    border: 1px solid #d8cfb9; border-radius: 2px;
+    border: 1px solid #d5d9df; border-radius: 2px;
     box-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 18px 40px -18px rgba(0,0,0,0.7);
   }
   .intake-sheet { padding: 22px 24px 20px; }
@@ -179,15 +180,15 @@
     font-family: var(--sans); font-size: 16px; line-height: 28px; color: var(--ink);
     padding: 6px 10px; border: 1px solid var(--rule); border-radius: 2px;
     /* ruled like a form: one hairline per line of text */
-    background: #fbfaf5 repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #e3ddcd 27px, #e3ddcd 28px);
+    background: #fafbfc repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #e4e7eb 27px, #e4e7eb 28px);
     background-attachment: local; background-position: 0 6px;
   }
-  .intake-sheet textarea::placeholder { color: #8b8275; }
+  .intake-sheet textarea::placeholder { color: #858c96; }
   .intake-sheet textarea:focus-visible { outline: 2px solid var(--lamp); outline-offset: 1px; }
   .field-help { font-size: 13px; color: var(--ink-muted); margin: 8px 0 14px; }
   .legacy-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .legacy-pickers > div { margin-bottom: 14px; }
-  .legacy-pickers select { width: 100%; font-family: var(--sans); font-size: 14px; color: var(--ink); padding: 9px 10px; border: 1px solid var(--rule); border-radius: 2px; background: #fbfaf5; }
+  .legacy-pickers select { width: 100%; font-family: var(--sans); font-size: 14px; color: var(--ink); padding: 9px 10px; border: 1px solid var(--rule); border-radius: 2px; background: #fafbfc; }
   /* #ncError, #ncTimer and #ncCourtroom are hidden by an INLINE display:none, never by
      this stylesheet. nocase-v2.3-patch.js reveals them with style.display = '' (clear
      the inline value). Hide them here as well and that clear falls through to this
@@ -217,7 +218,7 @@
   #ncCourtroom .nc-terms-link { font-size: 13px; margin: 0; }
   .nc-next { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
   .nc-next h3 { margin-top: 0 !important; }
-  .nc-nextstep { margin-top: 14px; padding: 20px 22px; background: var(--paper); color: var(--ink); border: 1px solid #d8cfb9; border-radius: 2px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .nc-nextstep { margin-top: 14px; padding: 20px 22px; background: var(--paper); color: var(--ink); border: 1px solid #d5d9df; border-radius: 2px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
   #ncCourtroom .nc-nextstep h3 { font-family: var(--serif); font-size: 20px; margin: 0 0 4px; }   /* id needed: #ncCourtroom h3 sizes model markdown */
   #ncCourtroom .nc-nextstep p { font-size: 15px; color: var(--ink-soft); max-width: 44em; margin: 0; }
   /* Results are paper, so they take ink. The page's text colour is light (rooms are
@@ -268,12 +269,12 @@
   /* The page block's edge along the bottom: a few paper lines under each page. */
   .hero-book::after {
     content: ''; position: absolute; left: 2px; right: 2px; bottom: -5px; height: 5px; z-index: -1;
-    background: repeating-linear-gradient(to bottom, #e6e2d6 0 1px, #cfc8b8 1px 2px);
+    background: repeating-linear-gradient(to bottom, #eceef1 0 1px, #d5d9df 1px 2px);
     border-radius: 0 0 2px 2px;
     animation: leftShow 1ms linear 2050ms both;
   }
   .hero-book-page {
-    background: var(--paper); border: 1px solid #d8cfb9; padding: 18px 20px;
+    background: var(--paper); border: 1px solid #d5d9df; padding: 18px 20px;
     font-family: 'Hand', cursive; color: var(--gold); text-align: left;
     min-height: 0;
   }
@@ -325,7 +326,7 @@
   .case-lines .spark { fill: var(--gilt-shine); filter: drop-shadow(0 0 6px var(--gilt-shine)); }
   .case-card {
     position: absolute; width: 236px; padding: 12px 14px 13px;
-    background: rgba(29,19,13,0.82); border: 1px solid rgba(210,176,122,0.55); border-radius: 3px;
+    background: rgba(15,18,22,0.82); border: 1px solid rgba(210,176,122,0.55); border-radius: 3px;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 22px -4px rgba(210,176,122,0.30), 0 14px 26px -12px rgba(0,0,0,0.8);
     text-align: left; transition: border-color 300ms, box-shadow 300ms;
     animation: cardOut 900ms var(--ease) var(--card-delay, 2.4s) both, cardDrift 7s ease-in-out calc(var(--card-delay, 2.4s) + 900ms) infinite;
@@ -368,9 +369,9 @@
 
   /* ROOM 4: the conference room — example case file on the courtroom plate */
   .plate-room { background: var(--walnut); overflow: hidden; }
-  .plate-room::before { content: ''; position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
-  .conference::before { background-image: linear-gradient(rgba(29,19,13,0.80), rgba(29,19,13,0.92)), url('assets/hero-courtroom.jpg'); }
-  .packet-room::before { background-image: linear-gradient(to right, rgba(29,19,13,0.94) 0%, rgba(29,19,13,0.78) 55%, rgba(29,19,13,0.42) 100%), url('assets/office-night.jpg'); }
+  .plate-room::before { content: ''; position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; filter: saturate(0.2) brightness(0.95); }   /* the courtroom and office plates are warm wood; drain it (no brown) */
+  .conference::before { background-image: linear-gradient(rgba(15,18,22,0.80), rgba(15,18,22,0.92)), url('assets/hero-courtroom.jpg'); }
+  .packet-room::before { background-image: linear-gradient(to right, rgba(15,18,22,0.94) 0%, rgba(15,18,22,0.78) 55%, rgba(15,18,22,0.42) 100%), url('assets/office-night.jpg'); }
   .casefile { margin-top: 40px; padding: 22px 24px 20px; }
   .casefile-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 2px solid var(--ink); }
   .casefile-head b { font-family: var(--serif); font-size: 19px; }
@@ -470,7 +471,7 @@
   .door-note { margin-top: 18px; font-size: 13px; color: var(--on-dark-soft); }
 
   /* FOOTER */
-  footer { background: #140d08; padding: 64px 24px 32px; border-top: 1px solid var(--hairline); }
+  footer { background: #0a0c0f; padding: 64px 24px 32px; border-top: 1px solid var(--hairline); }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; max-width: 1100px; margin: 0 auto 48px; }
   .footer-brand { font-family: var(--serif); font-weight: 700; font-size: 20px; color: var(--paper); }
   .footer-brand-desc { font-size: 14px; color: var(--on-dark-soft); line-height: 1.6; margin-top: 10px; max-width: 300px; }
@@ -500,7 +501,7 @@
        the fold on a 375x667 phone, and that button is the whole point of the screen. */
     .intake-sheet textarea { min-height: 84px; }
     .lobby-plate img { object-position: 40% 60%; }
-    .lobby-plate::after { background: linear-gradient(to bottom, rgba(29,19,13,0.35) 0%, rgba(29,19,13,0.15) 40%, var(--walnut) 96%); }
+    .lobby-plate::after { background: linear-gradient(to bottom, rgba(15,18,22,0.35) 0%, rgba(15,18,22,0.15) 40%, var(--walnut) 96%); }
     .lobby-grid { grid-template-columns: minmax(0, 1fr); min-height: 0; row-gap: 20px; text-align: left; justify-items: stretch; }
     .lobby-copy { display: contents; }
     .hero-headline { order: 1; margin-bottom: 0; }
