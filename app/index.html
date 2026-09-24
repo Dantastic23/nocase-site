@@ -51,6 +51,20 @@
   .italic { font-style: italic; font-weight: 500; }
   code { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 0.85em; background: var(--paper-dark); padding: 0.05rem 0.3rem; border-radius: 3px; }
 
+  .cases-btn { font: inherit; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.8rem; border: 1px solid var(--rule); border-radius: 99px; background: #fff; color: var(--ink); cursor: pointer; white-space: nowrap; }
+  .cases-btn[hidden], .cases-modal[hidden] { display: none; }
+  @media (max-width: 520px) { .brand-chip { display: none; } }   /* room for My cases on phones */
+  .cases-modal { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.45); display: flex; align-items: flex-start; justify-content: center; padding: 8vh 1rem 1rem; }
+  .cases-card { background: #fff; color: var(--ink); width: min(520px, 100%); max-height: 84vh; overflow: auto; border-radius: 10px; padding: 1rem 1.1rem 1.1rem; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+  .cases-head { display: flex; justify-content: space-between; align-items: center; } .cases-head h3 { margin: 0; font-size: 1.15rem; }
+  .cases-x { font-size: 1.5rem; line-height: 1; background: none; border: 0; cursor: pointer; color: var(--ink-soft); }
+  .cases-sub { font-size: 0.8rem; color: var(--ink-soft); margin: 0.2rem 0 0.8rem; }
+  .case-item { display: flex; gap: 0.7rem; align-items: center; justify-content: space-between; border: 1px solid var(--rule); border-radius: 8px; padding: 0.65rem 0.75rem; margin-bottom: 0.5rem; }
+  .case-item.current { border-color: #b9cbee; background: #f4f8ff; }
+  .case-item b { display: block; font-size: 0.92rem; } .case-item small { display: block; font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.15rem; }
+  .case-item button, .cases-new { font: inherit; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: #fff; cursor: pointer; white-space: nowrap; }
+  .case-item .tag { font-size: 0.75rem; font-weight: 600; color: #2b5bb8; white-space: nowrap; }
+  .cases-new { width: 100%; margin-top: 0.4rem; background: #fff; color: var(--ink); }
   .app-header { background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.7rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .brand { display: flex; align-items: center; gap: 0.55rem; }
   .brand-mark { width: 28px; height: 28px; background: var(--ink); color: var(--paper); border-radius: 4px; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 0.9rem; }
@@ -413,10 +427,21 @@
       </div>
     </div>
   </div>
-  <div id="folderStatus">
-    <span class="pill warn"><span class="dot"></span>No folder linked</span>
+  <div style="display:flex; align-items:center; gap:0.5rem;">
+    <button class="cases-btn" id="casesBtn" type="button" hidden>My cases</button>
+    <div id="folderStatus">
+      <span class="pill warn"><span class="dot"></span>No folder linked</span>
+    </div>
   </div>
 </header>
+<div class="cases-modal" id="casesModal" hidden>
+  <div class="cases-card" role="dialog" aria-modal="true" aria-labelledby="casesTitle">
+    <div class="cases-head"><h3 id="casesTitle">My cases</h3><button type="button" class="cases-x" data-a="close" aria-label="Close">&times;</button></div>
+    <p class="cases-sub" id="casesSub"></p>
+    <div class="cases-list" id="casesList"></div>
+    <button type="button" class="cases-new" data-a="new">+ Start a new case</button>
+  </div>
+</div>
 
 <!-- Onboarding -->
 <section class="onboarding" id="onboarding">
@@ -1241,6 +1266,8 @@ async function initWorkspace() {
   document.getElementById('onboarding').classList.add('hidden');
   document.getElementById('workspace').classList.remove('hidden');
   const folderLabel = window.__ncOPFS ? 'this device' : folderHandle.name;
+  rememberCaseFolder();
+  document.getElementById('casesBtn').hidden = false;
   document.getElementById('folderStatus').innerHTML = `<span class="pill ok"><span class="dot"></span>${window.__ncOPFS ? 'Case stored on this device' : 'Folder linked · ' + escapeHtml(folderLabel)}</span>`;
   document.getElementById('folderInfo').innerHTML = `linked: <code>${escapeHtml(folderLabel)}/</code>`;
   // Bridge for intake.js (it can't pick a folder on mobile) and hide the
@@ -1429,6 +1456,88 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   } finally {
     btn.disabled = false;
   }
+});
+
+/* ---------- Case switcher (Dan, 2026-09-24) ----------
+   Phones: every case is an OPFS folder named nocase-case*; switching sets
+   'ncOpfsCaseDir' and reloads. Computers: every folder a case was opened from is kept
+   (one handle per IndexedDB key 'caseFolder:<id>', ids listed in 'caseFolderIds' — the
+   same one-handle-per-key pattern as the linked folder); switching re-grants access
+   and reloads.
+   Reload, not an in-place swap: the flow controller and intake hold per-case state. */
+async function caseFolderHandles() {
+  if (window.__ncOPFS) {
+    const root = await navigator.storage.getDirectory(); const out = [];
+    for await (const [name, h] of root.entries()) if (h.kind === 'directory' && name.startsWith('nocase-case')) out.push(h);
+    return out;
+  }
+  const out = [];
+  for (const id of (await idbGet('caseFolderIds')) || []) { const h = await idbGet('caseFolder:' + id); if (h) out.push(h); }
+  return out;
+}
+async function rememberCaseFolder() {
+  if (window.__ncOPFS || !folderHandle) return;
+  try {
+    for (const h of await caseFolderHandles()) if (await h.isSameEntry(folderHandle)) return;
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await idbSet('caseFolder:' + id, folderHandle);
+    await idbSet('caseFolderIds', [...((await idbGet('caseFolderIds')) || []), id]);
+  } catch (e) { console.warn('case list not saved', e); }
+}
+async function caseSummary(h) {
+  let readable = true;
+  if (!window.__ncOPFS && h.queryPermission) { try { readable = (await h.queryPermission({ mode: 'readwrite' })) === 'granted'; } catch { readable = false; } }
+  const out = { h, name: h.name, label: h.name, detail: readable ? '' : 'Folder: ' + h.name + ' (tap Open to allow access)', updated: 0, current: false };
+  try { out.current = !!folderHandle && await h.isSameEntry(folderHandle); } catch {}
+  if (!readable) return out;
+  try {
+    const cs = JSON.parse(await readFileText(h, 'case.json') || '{}');
+    const desc = String(cs.caseDescription || '').trim();
+    out.label = cs.title && cs.title !== 'New case' ? cs.title : (desc ? desc.slice(0, 70) + (desc.length > 70 ? '…' : '') : 'Untitled case');
+    let docs = 0; try { const d = await h.getDirectoryHandle('documents'); for await (const _ of d.values()) docs++; } catch {}
+    out.updated = Date.parse(cs.updatedAt || '') || 0;
+    out.detail = `${docs} document${docs === 1 ? '' : 's'}${out.updated ? ' · updated ' + new Date(out.updated).toLocaleDateString() : ''}`;
+  } catch {}
+  return out;
+}
+async function openCasesModal() {
+  const modal = document.getElementById('casesModal'), list = document.getElementById('casesList');
+  document.getElementById('casesSub').textContent = window.__ncOPFS ? 'Cases saved on this device.' : 'Cases you have opened in this browser. Each one is its own folder on your computer.';
+  list.innerHTML = '<p class="cases-sub">Loading…</p>';
+  modal.hidden = false;
+  const items = await Promise.all((await caseFolderHandles()).map(caseSummary));
+  items.sort((a, b) => (b.current - a.current) || (b.updated - a.updated));
+  list.innerHTML = items.length ? '' : '<p class="cases-sub">No other cases yet.</p>';
+  items.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'case-item' + (it.current ? ' current' : '');
+    row.innerHTML = `<div style="min-width:0"><b>${escapeHtml(it.label)}</b><small>${escapeHtml(it.detail)}</small></div>` + (it.current ? '<span class="tag">Open now</span>' : '<button type="button">Open</button>');
+    const btn = row.querySelector('button');
+    if (btn) btn.onclick = () => switchToCase(it.h);
+    list.appendChild(row);
+  });
+}
+async function switchToCase(h) {
+  if (window.__ncOPFS) { localStorage.setItem('ncOpfsCaseDir', h.name); location.reload(); return; }
+  try {
+    if ((await h.requestPermission({ mode: 'readwrite' })) !== 'granted') { showToast('NoCase needs access to that folder to open the case.'); return; }
+  } catch (e) { showToast('Could not open that folder: ' + e.message); return; }
+  await idbSet(CONFIG.folderHandleKey, h);
+  location.reload();
+}
+async function startNewCase() {
+  if (window.__ncOPFS) { await opfsCaseFolder(true); location.reload(); return; }
+  try {
+    const h = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    await idbSet(CONFIG.folderHandleKey, h);   // an empty folder becomes a new case; one that holds a case opens it
+    location.reload();
+  } catch (e) { if (e.name !== 'AbortError') showToast('Could not open that folder: ' + e.message); }
+}
+document.getElementById('casesBtn').addEventListener('click', openCasesModal);
+document.getElementById('casesModal').addEventListener('click', e => {
+  const a = e.target.dataset && e.target.dataset.a;
+  if (a === 'close' || e.target.id === 'casesModal') document.getElementById('casesModal').hidden = true;
+  if (a === 'new') startNewCase();
 });
 
 function showToast(msg) {
