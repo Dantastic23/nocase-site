@@ -1774,7 +1774,9 @@ function showToast(msg) {
 
       const priorObjections = findMore && objData?.objections ? objData.objections : [];
 
-      const resp = await fetch(CONFIG.apiBase, {
+      // Function URL, not API Gateway: objections run on Opus and take ~70s; Gateway cuts
+      // requests at 29s and the browser saw "Failed to fetch" (2026-09-24 demo recording).
+      const resp = await fetch("https://gwz2q7it5d264sob3rqsy4puly0xvfmd.lambda-url.us-east-1.on.aws/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
