@@ -105,6 +105,9 @@
     padding: 8px 16px; border-radius: 3px; font-weight: 600; font-size: 13px;
   }
   .nav-links a.nav-cta:hover { background: #fff; }
+  /* Demo Day link (2026-09-25) — remove with /demo/ after the demo. */
+  .nav-links a.nav-demo { color: #e6c887; font-weight: 600; border: 1px solid rgba(230,200,135,0.6); padding: 7px 14px; border-radius: 999px; }
+  .nav-links a.nav-demo:hover { color: #16120c; background: #e6c887; text-decoration: none; }
 
   /* BUTTONS */
   .btn {
@@ -577,6 +580,9 @@
   @media (max-width: 920px) {
     .nav { height: 56px; padding: 0 16px; }
     .nav-links li:not(:last-child) { display: none; }   /* phones keep only the button */
+    .nav-links li.nav-demo-li { display: block; }         /* ...and the Demo Day link */
+    .nav-links { gap: 10px; }
+    .nav-logo-by { display: none; }
     /* Phones get their own crop (hero-library-m.jpg: gallery, ladder and lamps) as a
        band across the top; headline and sheet sit on solid walnut beneath it, so
        nothing on a small screen depends on text-over-photo contrast. */
@@ -651,6 +657,7 @@
     <span class="nav-logo-by">by Benchmark</span>
   </a>
   <ul class="nav-links">
+    <li class="nav-demo-li"><a href="/demo/" class="nav-demo">&#9654; Demo Day</a></li>
     <li><a href="#how">How it works</a></li>
     <li><a href="#privacy">Privacy</a></li>
     <li><a href="#pricing">Pricing</a></li>
